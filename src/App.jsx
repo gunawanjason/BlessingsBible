@@ -293,6 +293,39 @@ function App() {
           {/* Top row - Always visible */}
           <div className="nav-top">
             <div className="nav-brand">
+              {/* Copy Button positioned on the left */}
+              {selectedVerses.size > 0 && (
+                <div className="copy-section copy-left">
+                  <button
+                    onClick={copySelectedVerses}
+                    className={`copy-button ${copyState}`}
+                    disabled={copyState === "copying"}
+                    title={`Copy ${selectedVerses.size} selected verse${
+                      selectedVerses.size > 1 ? "s" : ""
+                    }`}
+                  >
+                    {copyState === "copying" && (
+                      <>
+                        ⏳ <span className="copy-text">Copying...</span>
+                      </>
+                    )}
+                    {copyState === "copied" && (
+                      <>
+                        ✅ <span className="copy-text">Copied</span>
+                      </>
+                    )}
+                    {copyState === "idle" && (
+                      <>
+                        📋 <span className="copy-text">Copy</span>
+                        <span className="copy-count">
+                          {selectedVerses.size}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
               <img
                 src="/bcc_logo.png"
                 alt="BlessingsBible Logo"
@@ -326,40 +359,7 @@ function App() {
               </button>
             </div>
 
-            <div className="nav-actions">
-              {/* Copy Button */}
-              {selectedVerses.size > 0 && (
-                <div className="copy-section">
-                  <button
-                    onClick={copySelectedVerses}
-                    className={`copy-button ${copyState}`}
-                    disabled={copyState === "copying"}
-                    title={`Copy ${selectedVerses.size} selected verse${
-                      selectedVerses.size > 1 ? "s" : ""
-                    }`}
-                  >
-                    {copyState === "copying" && (
-                      <>
-                        ⏳ <span className="copy-text">Copying...</span>
-                      </>
-                    )}
-                    {copyState === "copied" && (
-                      <>
-                        ✅ <span className="copy-text">Copied</span>
-                      </>
-                    )}
-                    {copyState === "idle" && (
-                      <>
-                        📋 <span className="copy-text">Copy</span>
-                        <span className="copy-count">
-                          {selectedVerses.size}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
+            <div className="nav-actions"></div>
           </div>
 
           {/* Bottom row - Controls */}

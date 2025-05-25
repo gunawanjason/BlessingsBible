@@ -108,6 +108,11 @@ body {
   right: 0;
 }
 
+.nav-brand .copy-left {
+  position: absolute !important;
+  left: 0 !important;
+}
+
 .app-title {
   font-size: 28px;
   font-weight: 700;
@@ -474,6 +479,11 @@ select,
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
   }
+
+  .nav-brand .copy-left {
+    position: absolute !important;
+    left: 0 !important;
+  }
 }
 
 /* Tablet view - stretch search bar and center all controls */
@@ -496,6 +506,11 @@ select,
     flex: none;
     justify-content: center;
     width: 100%;
+  }
+
+  .nav-brand .copy-left {
+    position: absolute !important;
+    left: 0 !important;
   }
 
   .nav-actions {
@@ -547,6 +562,12 @@ select,
     flex: none;
     justify-content: center;
     width: 100%;
+  }
+
+  .nav-brand .copy-left {
+    position: absolute !important;
+    left: 0 !important;
+    justify-content: left;
   }
 
   .nav-actions {
@@ -625,7 +646,7 @@ select,
 }
 
 /* Very small screens (older phones) */
-@media (max-width: 320px) {
+@media (max-width: 480px) {
   :root {
     --spacing-xs: 2px;
     --spacing-sm: 4px;
@@ -637,6 +658,13 @@ select,
 
   .nav-content {
     padding: var(--spacing-xs);
+  }
+
+  .nav-brand .copy-left {
+    position: absolute !important;
+    left: 0 !important;
+    justify-content: left;
+    max-width: 100px;
   }
 
   .app-title {
