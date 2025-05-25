@@ -14,6 +14,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
     English: true,
     Chinese: true,
   });
+  const [dropdownPosition, setDropdownPosition] = useState("down");
   const dropdownRef = useRef(null);
 
   // Memoized translations array to prevent unnecessary re-renders
@@ -102,6 +103,10 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
   const handleClickOutside = useCallback((event) => {
     if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
       setShowDropdown(false);
+      // Clean up CSS custom property
+      if (window.innerWidth <= 480) {
+        document.documentElement.style.removeProperty("--dropdown-top");
+      }
     }
   }, []);
 
@@ -132,20 +137,80 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
     [translations, onTranslationChange]
   );
 
-  // Optimized dropdown toggle handler
+  // Optimized dropdown toggle handler with position calculation
   const toggleDropdown = useCallback(() => {
-    setShowDropdown((prev) => !prev);
+    setShowDropdown((prev) => {
+      if (!prev && dropdownRef.current) {
+        // Calculate optimal position when opening dropdown
+        const rect = dropdownRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        // Estimate dropdown height (considering mobile constraints)
+        const isMobile = window.innerWidth <= 768;
+        const isVerySmall = window.innerWidth <= 480;
+        const estimatedDropdownHeight = isVerySmall
+          ? Math.min(viewportHeight * 0.35, 250)
+          : isMobile
+          ? Math.min(viewportHeight * 0.4, 300)
+          : Math.min(viewportHeight * 0.5, 400);
+
+        // For very small screens, calculate position accounting for scroll
+        if (isVerySmall) {
+          const scrollY = window.scrollY || window.pageYOffset;
+          const absoluteTop = rect.top + scrollY;
+
+          // Check if dropdown should open upward
+          if (
+            spaceBelow < estimatedDropdownHeight &&
+            spaceAbove > estimatedDropdownHeight
+          ) {
+            document.documentElement.style.setProperty(
+              "--dropdown-top",
+              `${absoluteTop - 8}px`
+            );
+            setDropdownPosition("up");
+          } else {
+            document.documentElement.style.setProperty(
+              "--dropdown-top",
+              `${absoluteTop + rect.height + 8}px`
+            );
+            setDropdownPosition("down");
+          }
+        } else {
+          // Position dropdown up if not enough space below and more space above
+          if (
+            spaceBelow < estimatedDropdownHeight &&
+            spaceAbove > estimatedDropdownHeight
+          ) {
+            setDropdownPosition("up");
+          } else {
+            setDropdownPosition("down");
+          }
+        }
+      }
+      return !prev;
+    });
   }, []);
 
   // Optimized close dropdown handler
   const closeDropdown = useCallback(() => {
     setShowDropdown(false);
+    // Clean up CSS custom property
+    if (window.innerWidth <= 480) {
+      document.documentElement.style.removeProperty("--dropdown-top");
+    }
   }, []);
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Escape") {
       setShowDropdown(false);
+      // Clean up CSS custom property
+      if (window.innerWidth <= 480) {
+        document.documentElement.style.removeProperty("--dropdown-top");
+      }
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       setShowDropdown((prev) => !prev);
@@ -287,7 +352,12 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
       </button>
 
       {showDropdown && (
-        <div className="translation-dropdown" role="menu">
+        <div
+          className={`translation-dropdown ${
+            dropdownPosition === "up" ? "position-up" : ""
+          }`}
+          role="menu"
+        >
           <div className="dropdown-header">
             <h3>Bible Translations</h3>
             <button

@@ -20,19 +20,79 @@ function App() {
   const [showMobileMenu, setShowMobileMenu] = useState(true);
   const mobileMenuRef = useRef(null);
 
-  // Load Bible structure data
+  // Function to generate a random verse reference
+  const generateRandomVerse = (bibleData) => {
+    if (!bibleData || !bibleData.books || bibleData.books.length === 0) {
+      return null;
+    }
+
+    // Get a random book
+    const randomBookIndex = Math.floor(Math.random() * bibleData.books.length);
+    const randomBook = bibleData.books[randomBookIndex];
+
+    // Get a random chapter
+    const randomChapter = Math.floor(Math.random() * randomBook.chapters) + 1;
+
+    // Get a random verse from that chapter
+    const versesInChapter = randomBook.verses[randomChapter - 1];
+    const randomVerse = Math.floor(Math.random() * versesInChapter) + 1;
+
+    return {
+      book: randomBook.name,
+      chapter: randomChapter,
+      verse: randomVerse,
+      reference: `${randomBook.name} ${randomChapter}:${randomVerse}`,
+    };
+  };
+
+  // Load a random verse on first visit
+  const loadRandomVerse = async (bibleData) => {
+    const randomVerse = generateRandomVerse(bibleData);
+    if (!randomVerse) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const fetchedVerses = await fetchVerses(
+        selectedTranslation,
+        randomVerse.reference
+      );
+
+      if (fetchedVerses.length > 0) {
+        const firstVerse = fetchedVerses[0];
+        setSelectedBook(firstVerse.book);
+        setSelectedChapter(firstVerse.chapter);
+        setHighlightedVerse({
+          verse: firstVerse.verse,
+          count: 1,
+        });
+        setVerses(fetchedVerses);
+      }
+    } catch (err) {
+      console.error("Error loading random verse:", err);
+      setError(err.message || "Failed to load random verse");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load Bible structure data and random verse on every reload
   useEffect(() => {
     const loadBibleStructure = async () => {
       try {
         const response = await fetch("/bible-structure.json");
         const data = await response.json();
         setBibleStructure(data);
+
+        // Load random verse on every page load
+        await loadRandomVerse(data);
       } catch (error) {
         console.error("Failed to load Bible structure:", error);
       }
     };
     loadBibleStructure();
-  }, []);
+  }, [selectedTranslation]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
