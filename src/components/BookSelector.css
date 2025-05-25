@@ -352,6 +352,17 @@
   }
 }
 
+@keyframes dropdownAppearMobile {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 .book-dropdown,
 .chapter-dropdown {
   position: relative;
@@ -812,6 +823,21 @@
   .chapter-display-wrapper {
     flex-direction: column;
     gap: var(--spacing-xs, 4px);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .book-selector.integrated {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .book-dropdown,
+  .chapter-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .chapter-display-button {
@@ -839,6 +865,10 @@
   .dropdown-menu {
     width: 95vw;
     max-height: 88vh;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+    animation: dropdownAppearMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .menu-header {
