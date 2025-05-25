@@ -237,7 +237,21 @@ const ChapterReader = ({
       {/* Copy button moved to nav bar */}
 
       <main className="chapter-content">
-        {loading && <div className="status-message">Loading chapter...</div>}
+        {loading && (
+          <div className="loading-container">
+            <div className="loading-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
+              </svg>
+            </div>
+            <div className="loading-text">Loading chapter...</div>
+            <div className="loading-dots">
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+              <div className="loading-dot"></div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="status-message error">
