@@ -1,0 +1,663 @@
+/* Apple WWDC-inspired Modern Design */
+:root {
+  --primary-color: #007aff;
+  --primary-hover: #0056d6;
+  --secondary-color: #8e8e93;
+  --accent-color: #ff9500;
+  --success-color: #34c759;
+  --error-color: #ff3b30;
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f2f2f7;
+  --bg-tertiary: #ffffff;
+  --bg-overlay: rgba(255, 255, 255, 0.8);
+
+  --text-primary: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #a1a1a6;
+
+  --border-color: #d2d2d7;
+  --divider-color: #e5e5ea;
+
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  --radius: 12px;
+  --radius-large: 16px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Navigation Height Variables */
+  --nav-height: 80px; /* Desktop default */
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.47059;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navigation Bar */
+.app-nav {
+  background: var(--bg-overlay);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--divider-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Top row - Brand and navigation */
+.nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  position: relative;
+  gap: var(--spacing-sm);
+}
+
+.app-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+}
+
+.nav-brand .mobile-menu-toggle {
+  position: absolute;
+  right: 0;
+}
+
+.app-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.current-reference {
+  display: flex;
+  align-items: center;
+}
+
+.reference-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Copy button in navbar */
+.nav-copy-section {
+  display: flex;
+  align-items: center;
+}
+
+.nav-copy-button {
+  background: var(--success-color);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+  min-height: 36px;
+}
+
+.nav-copy-button:hover:not(:disabled) {
+  background: #28a745;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.nav-copy-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+.nav-copy-button:disabled {
+  background: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.nav-copy-button .copy-text {
+  font-size: 12px;
+}
+
+.nav-copy-button .copy-count {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.nav-copy-button.copying {
+  background: var(--accent-color);
+}
+
+.nav-copy-button.copied {
+  background: var(--success-color);
+}
+
+/* Navigation buttons */
+.nav-navigation {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.nav-button {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.nav-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.nav-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+.nav-button:disabled {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Bottom row - Controls */
+.nav-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.nav-primary-controls {
+  flex: 1;
+  min-width: 0;
+  max-width: 500px;
+}
+
+.nav-secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+/* BookSelector adjustments */
+.nav-primary-controls .book-selector {
+  width: 100%;
+}
+
+/* Status Bar */
+.status-bar {
+  text-align: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease-out;
+}
+
+.status-bar.loading {
+  background: linear-gradient(90deg, var(--bg-primary), var(--bg-secondary));
+  color: var(--text-secondary);
+}
+
+.status-bar.error {
+  background: var(--error-color);
+  color: white;
+}
+
+/* Main Layout */
+.app-main {
+  flex: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: calc(100vh - 80px);
+  background: var(--bg-tertiary);
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1040px) {
+  :root {
+    --nav-height: 120px; /* Optimized for new layout */
+  }
+
+  .nav-content {
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-sm);
+    align-items: center;
+  }
+
+  .nav-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .nav-brand {
+    flex: none;
+    justify-content: center;
+  }
+
+  .app-logo {
+    height: 28px;
+  }
+
+  .app-title {
+    font-size: 24px;
+    text-align: center;
+  }
+
+  .reference-text {
+    font-size: 14px;
+    margin-left: var(--spacing-md);
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .nav-controls {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: center;
+    width: 100%;
+  }
+
+  .nav-primary-controls {
+    width: 100%;
+    max-width: none;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-secondary-controls {
+    width: 100%;
+    justify-content: center;
+    gap: var(--spacing-sm);
+  }
+
+  .nav-secondary-controls .search-bar {
+    flex: 1;
+    margin-right: var(--spacing-sm);
+  }
+
+  .app-main {
+    min-height: calc(100vh - var(--nav-height));
+  }
+}
+
+/* Focus and Accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+button,
+input,
+select,
+.app-nav,
+.status-bar,
+.nav-controls > * {
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease, transform 0.2s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Mobile menu toggle button */
+.mobile-menu-toggle {
+  display: none;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-light);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.mobile-menu-toggle svg {
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.mobile-menu-toggle:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Improved mobile touch responsiveness */
+@media (max-width: 1040px) {
+  .mobile-menu-toggle {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .mobile-menu-toggle:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* Tablet view - stretch search bar and center all controls */
+@media (max-width: 1040px) and (min-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+    z-index: 10;
+  }
+
+  .nav-content {
+    align-items: center;
+  }
+
+  .nav-top {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .nav-brand {
+    flex: none;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .nav-actions {
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .nav-controls {
+    align-items: center;
+    display: none;
+  }
+
+  .nav-controls.mobile-open {
+    display: flex;
+  }
+
+  .nav-primary-controls {
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-secondary-controls {
+    justify-content: center;
+  }
+
+  .nav-secondary-controls .search-bar {
+    flex: 2;
+    min-width: 300px;
+  }
+}
+
+/* Mobile view - below 768px */
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: flex;
+    z-index: 10;
+  }
+
+  .nav-top {
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+
+  .nav-brand {
+    flex: none;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .nav-actions {
+    position: absolute;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .nav-controls {
+    display: none;
+  }
+
+  .nav-controls.mobile-open {
+    display: flex;
+  }
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 1040px) {
+  /* Ensure minimum touch targets */
+  button,
+  .nav-button,
+  .copy-button,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent horizontal scrolling */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Improve text readability on mobile */
+  .app {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better touch scrolling */
+  .app-main,
+  .chapter-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* iOS-specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .search-input,
+  input,
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+
+  /* Fix iOS bounce scrolling */
+  .app-main {
+    position: relative;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Android-specific fixes */
+@media (max-width: 768px) and (orientation: portrait) {
+  /* Keep nav sticky instead of fixed to maintain proper flow */
+  .app-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+}
+
+/* Very small screens (older phones) */
+@media (max-width: 320px) {
+  :root {
+    --spacing-xs: 2px;
+    --spacing-sm: 4px;
+    --spacing-md: 8px;
+    --spacing-lg: 12px;
+    --spacing-xl: 16px;
+    --spacing-2xl: 24px;
+  }
+
+  .nav-content {
+    padding: var(--spacing-xs);
+  }
+
+  .app-title {
+    font-size: 16px;
+  }
+}
+
+/* Improve focus indicators for mobile */
+@media (max-width: 768px) {
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+}
+
+/* High DPI display support */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .app-nav {
+    border-bottom-width: 0.5px;
+  }
+}

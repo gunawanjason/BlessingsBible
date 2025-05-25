@@ -1,0 +1,468 @@
+/* Apple-style Chapter Reader */
+.chapter-reader {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-tertiary, #ffffff);
+}
+
+/* Chapter Controls */
+.chapter-controls {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--divider-color, #e5e5ea);
+  padding: var(--spacing-md, 16px) var(--spacing-xl, 32px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md, 16px);
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.navigation-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.copy-section {
+  display: flex;
+  justify-content: center;
+  min-height: 36px; /* Reserve space for copy button */
+  align-items: center;
+}
+
+/* Copy Button */
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  background: var(--primary-color, #007aff);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-button:hover:not(:disabled) {
+  background: var(--primary-hover, #0056d6);
+  transform: translateY(-1px);
+}
+
+.copy-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.copy-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.copy-button.copied {
+  background: var(--success-color, #34c759);
+}
+
+.copy-button.copying {
+  background: var(--secondary-color, #8e8e93);
+}
+
+.copy-text {
+  font-weight: 500;
+}
+
+.copy-count {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: var(--spacing-xs, 4px);
+}
+
+.nav-button {
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary, #1d1d1f);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nav-button:active:not(:disabled) {
+  transform: translateY(0);
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.04);
+  box-shadow: none;
+}
+
+.nav-button:disabled:hover {
+  transform: none;
+}
+
+/* Content */
+.chapter-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-xl, 32px);
+}
+
+.status-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--text-secondary, #86868b);
+  text-align: center;
+}
+
+.status-message.error {
+  color: var(--error-color, #ff3b30);
+}
+
+/* Verses Container */
+.verses-container {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+  font-size: 18px;
+  color: var(--text-primary, #1d1d1f);
+}
+
+.verse-item {
+  display: flex;
+  margin-bottom: var(--spacing-sm, 8px);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+  user-select: none;
+}
+
+.verse-item:hover {
+  background: rgba(142, 142, 147, 0.06);
+}
+
+.verse-item.highlighted {
+  background: rgba(255, 149, 0, 0.15);
+  border-left: 3px solid var(--accent-color, #ff9500);
+  padding-left: calc(var(--spacing-md, 16px) - 3px);
+  animation: highlight-pulse 0.5s ease-out;
+}
+
+.verse-item.selected {
+  background: rgba(0, 122, 255, 0.1);
+  border-left: 3px solid var(--primary-color, #007aff);
+  padding-left: calc(var(--spacing-md, 16px) - 3px);
+}
+
+.verse-item.selected.highlighted {
+  background: rgba(255, 149, 0, 0.2);
+  border-left: 3px solid var(--accent-color, #ff9500);
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background: rgba(255, 149, 0, 0.3);
+  }
+  100% {
+    background: rgba(255, 149, 0, 0.15);
+  }
+}
+
+.verse-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 20px;
+  margin-right: var(--spacing-sm, 8px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary, #86868b);
+  background: rgba(142, 142, 147, 0.12);
+  border-radius: 4px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.verse-item.selected .verse-number {
+  background: var(--primary-color, #007aff);
+  color: white;
+}
+
+.verse-item.highlighted .verse-number {
+  background: var(--accent-color, #ff9500);
+  color: white;
+}
+
+.verse-text {
+  flex: 1;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  font-size: 16px;
+}
+
+/* Placeholder */
+.chapter-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary, #86868b);
+  font-size: 17px;
+  text-align: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .chapter-controls {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  }
+
+  .controls-row {
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+    align-items: center;
+  }
+
+  .copy-section {
+    min-height: 32px;
+    order: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .navigation-controls {
+    order: 2;
+    gap: var(--spacing-md, 16px);
+  }
+
+  .nav-button {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .copy-button {
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 16px;
+  }
+
+  .chapter-content {
+    padding: var(--spacing-md, 16px);
+    /* Add slight top padding for tablet layout */
+    padding-top: var(--spacing-lg, 24px);
+  }
+
+  .verses-container {
+    font-size: 17px;
+    max-width: none;
+  }
+
+  .verse-item {
+    margin-bottom: var(--spacing-sm, 8px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    border-radius: 10px;
+  }
+
+  .verse-number {
+    margin-right: var(--spacing-sm, 8px);
+    min-width: 26px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .verse-text {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 480px) {
+  .chapter-controls {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  }
+
+  .controls-row {
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+    align-items: center;
+  }
+
+  .copy-section {
+    order: 1;
+    min-height: 28px;
+    width: 100%;
+  }
+
+  .navigation-controls {
+    order: 2;
+    gap: var(--spacing-lg, 24px);
+    justify-content: center;
+  }
+
+  .nav-button {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    border-radius: 14px;
+  }
+
+  .copy-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    min-height: 28px;
+  }
+
+  .chapter-content {
+    padding: var(--spacing-sm, 8px);
+    /* Add extra top padding to prevent overlap with taller sticky header */
+    padding-top: var(--spacing-xl, 32px);
+  }
+
+  .verses-container {
+    font-size: 16px;
+    padding: 0 var(--spacing-xs, 4px);
+  }
+
+  .verse-item {
+    margin-bottom: var(--spacing-xs, 4px);
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    border-radius: 8px;
+    align-items: flex-start;
+  }
+
+  .verse-number {
+    margin-right: var(--spacing-sm, 8px);
+    margin-top: 2px;
+    min-width: 24px;
+    height: 18px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .verse-text {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 360px) {
+  .chapter-controls {
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .nav-button {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+
+  .copy-button {
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-height: 24px;
+  }
+
+  .chapter-content {
+    padding: var(--spacing-xs, 4px);
+    /* Add even more top padding for very small screens where header is tallest */
+    padding-top: var(--spacing-2xl, 48px);
+  }
+
+  .verses-container {
+    font-size: 15px;
+    padding: 0;
+  }
+
+  .verse-item {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    margin-bottom: 2px;
+    border-radius: 6px;
+  }
+
+  .verse-number {
+    margin-right: var(--spacing-xs, 4px);
+    min-width: 22px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  .verse-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .status-message {
+    font-size: 15px;
+    height: 150px;
+  }
+}
+
+/* Smooth scrolling for verse navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for chapter content */
+.chapter-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chapter-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chapter-content::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary, #a1a1a6);
+  border-radius: 3px;
+}
+
+.chapter-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #86868b);
+}

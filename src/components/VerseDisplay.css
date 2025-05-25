@@ -1,0 +1,212 @@
+/* Apple WWDC-style Verse Display */
+.verse-display {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-lg, 24px);
+}
+
+.verse-display.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.placeholder-text {
+  color: var(--text-secondary, #86868b);
+  font-size: 17px;
+  font-weight: 400;
+  text-align: center;
+  font-style: normal;
+  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.022em;
+}
+
+.verse-item {
+  background: var(--bg-tertiary, #ffffff);
+  border: 1px solid var(--divider-color, #e5e5ea);
+  border-radius: var(--radius-large, 16px);
+  padding: var(--spacing-xl, 32px);
+  margin-bottom: var(--spacing-lg, 24px);
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.verse-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color, #007aff) 0%,
+    rgba(0, 122, 255, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.verse-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.verse-item:hover::before {
+  opacity: 0.05;
+}
+
+.verse-item:last-child {
+  margin-bottom: 0;
+}
+
+.verse-reference {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color, #007aff);
+  margin-bottom: var(--spacing-md, 16px);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+.verse-text {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-primary, #1d1d1f);
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  .verse-display {
+    padding: var(--spacing-md, 16px);
+  }
+
+  .verse-display.empty {
+    min-height: 250px;
+  }
+
+  .placeholder-text {
+    font-size: 16px;
+    padding: 0 var(--spacing-md, 16px);
+  }
+
+  .verse-item {
+    padding: var(--spacing-lg, 24px);
+    margin-bottom: var(--spacing-md, 16px);
+    border-radius: var(--radius, 12px);
+  }
+
+  .verse-reference {
+    font-size: 13px;
+    margin-bottom: var(--spacing-sm, 8px);
+  }
+
+  .verse-text {
+    font-size: 17px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 480px) {
+  .verse-display {
+    padding: var(--spacing-sm, 8px);
+  }
+
+  .verse-display.empty {
+    min-height: 200px;
+  }
+
+  .placeholder-text {
+    font-size: 15px;
+    padding: 0 var(--spacing-sm, 8px);
+  }
+
+  .verse-item {
+    padding: var(--spacing-md, 16px);
+    margin-bottom: var(--spacing-sm, 8px);
+    border-radius: 10px;
+  }
+
+  .verse-reference {
+    font-size: 12px;
+    margin-bottom: var(--spacing-xs, 4px);
+  }
+
+  .verse-text {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 360px) {
+  .verse-display {
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .verse-display.empty {
+    min-height: 180px;
+  }
+
+  .placeholder-text {
+    font-size: 14px;
+    padding: 0 var(--spacing-xs, 4px);
+  }
+
+  .verse-item {
+    padding: var(--spacing-sm, 8px);
+    margin-bottom: var(--spacing-xs, 4px);
+    border-radius: 8px;
+  }
+
+  .verse-reference {
+    font-size: 11px;
+    margin-bottom: var(--spacing-xs, 4px);
+  }
+
+  .verse-text {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  .verse-item {
+    background: rgba(28, 28, 30, 0.95);
+    border-color: rgba(99, 99, 102, 0.2);
+  }
+
+  .placeholder-text {
+    color: rgba(235, 235, 245, 0.6);
+  }
+
+  .verse-text {
+    color: rgba(235, 235, 245, 0.86);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .verse-item,
+  .verse-item::before {
+    transition: none;
+  }
+
+  .verse-item:hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,1011 @@
+/* Apple WWDC-style Book Selector */
+.book-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.selector-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+/* Integrated Mode Styles */
+.book-selector.integrated {
+  width: 100%;
+}
+
+.chapter-display-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-sm, 8px);
+  align-items: stretch;
+}
+
+.chapter-display-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.chapter-display-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius, 12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--shadow-light);
+  overflow: hidden;
+}
+
+.chapter-display-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    rgba(0, 122, 255, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.chapter-display-button:hover::before {
+  opacity: 0.08;
+}
+
+.chapter-display-button.active::before {
+  opacity: 0.12;
+}
+
+.chapter-display-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  border-color: rgba(0, 122, 255, 0.2);
+}
+
+.chapter-display-button:active {
+  transform: translateY(0);
+}
+
+.book-title-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+.book-title {
+  font-size: clamp(24px, 5vw, 32px);
+  font-weight: 700;
+  color: var(--text-primary, #1d1d1f);
+  margin: 0;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  transition: all 0.3s ease;
+}
+
+.chapter-display-button:hover .book-title {
+  color: var(--primary-color, #007aff);
+}
+
+.book-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #86868b);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  margin-top: var(--spacing-xs, 4px);
+}
+
+.chapter-display-button:hover .book-subtitle {
+  color: var(--primary-color, #007aff);
+  opacity: 1;
+}
+
+.chapter-info-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: var(--spacing-xs, 4px);
+}
+
+.chapter-info {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs, 4px);
+  font-size: 16px;
+  color: var(--text-secondary, #86868b);
+  transition: all 0.3s ease;
+}
+
+.chapter-label {
+  font-weight: 500;
+}
+
+.chapter-number {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-primary, #1d1d1f);
+}
+
+.chapter-total {
+  font-weight: 400;
+}
+
+.chapter-display-button:hover .chapter-info {
+  color: var(--primary-color, #007aff);
+}
+
+.chapter-display-button:hover .chapter-number {
+  color: var(--primary-color, #007aff);
+}
+
+.chapter-subtitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #86868b);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  margin-top: var(--spacing-xs, 4px);
+}
+
+.chapter-display-button:hover .chapter-subtitle {
+  color: var(--primary-color, #007aff);
+  opacity: 1;
+}
+
+.chapter-nav-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color, #007aff);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+}
+
+.chapter-nav-btn:hover {
+  background: var(--primary-color, #007aff);
+  color: white;
+  transform: scale(1.05);
+}
+
+.chapter-nav-btn:focus {
+  outline: 2px solid var(--primary-color, #007aff);
+  outline-offset: 2px;
+}
+
+.chapter-nav-btn.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+.chapter-nav-btn.disabled:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--primary-color, #007aff);
+  transform: none;
+}
+
+.clickable-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 122, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.chapter-display-button:hover .clickable-indicator {
+  background: var(--primary-color, #007aff);
+  transform: scale(1.1);
+}
+
+.chevron-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--primary-color, #007aff);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chapter-display-button:hover .chevron-icon {
+  color: white;
+  transform: rotate(180deg);
+}
+
+.chapter-display-button.active .chevron-icon {
+  transform: rotate(180deg);
+}
+
+.chapter-display-button.active:hover .chevron-icon {
+  color: white;
+}
+
+/* Compact Selector Buttons for Header */
+.selector-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  padding: 6px 12px;
+  background: rgba(142, 142, 147, 0.12);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #1d1d1f);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.selector-button:hover {
+  background: rgba(142, 142, 147, 0.2);
+}
+
+.selector-button:active {
+  background: rgba(142, 142, 147, 0.3);
+  transform: scale(0.98);
+}
+
+.button-text {
+  font-weight: 500;
+}
+
+.button-icon {
+  font-size: 14px;
+  color: var(--text-secondary, #86868b);
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.selector-button[aria-expanded="true"] .button-icon {
+  transform: rotate(90deg);
+}
+
+/* Enhanced Dropdown Menus */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-large, 16px);
+  box-shadow: var(--shadow-heavy);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-height: 70vh; /* Increased from 60vh for larger dropdowns */
+  min-width: 320px; /* Minimum width for better usability */
+  overflow-y: auto; /* Enable vertical scrolling */
+  z-index: 1000;
+  backdrop-filter: saturate(180%) blur(20px);
+  animation: dropdownAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Chapter dropdown should size to content */
+.chapters-menu {
+  right: auto;
+  width: auto;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+/* Mobile-specific dropdown adjustments */
+@media (max-width: 1040px) {
+  .dropdown-menu {
+    max-height: 50vh; /* Reduced height on mobile to avoid filling screen */
+    min-width: 280px;
+    left: 0; /* Align with parent's left edge */
+    /* The 'right' property is removed to allow width to be auto or determined by min-width/max-width */
+    max-width: calc(
+      100vw - (var(--spacing-md, 16px) * 2)
+    ); /* Prevent overflow from viewport */
+    box-sizing: border-box; /* Ensure padding/border are included in width/max-width */
+    overflow-y: auto; /* Ensure scrolling works on mobile */
+  }
+
+  .chapters-menu {
+    max-height: 50vh; /* Consistent mobile height */
+  }
+}
+
+@keyframes dropdownAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.book-dropdown,
+.chapter-dropdown {
+  position: relative;
+}
+
+/* Horizontal layout for integrated mode */
+.book-selector.integrated .book-dropdown {
+  flex: none;
+}
+
+.book-selector.integrated .chapter-dropdown {
+  width: auto;
+  min-width: 160px;
+  flex: none;
+}
+
+/* Ensure equal height for horizontal dropdowns */
+.book-selector.integrated .chapter-display-button {
+  height: 100%;
+  min-height: 80px; /* Reduced height for more compact appearance */
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px); /* Reduced padding */
+  justify-content: space-between; /* Distribute content evenly */
+}
+
+/* Smaller fonts for horizontal layout */
+.book-selector.integrated .book-title {
+  font-size: clamp(18px, 4vw, 24px); /* Reduced from clamp(24px, 5vw, 32px) */
+}
+
+.book-selector.integrated .book-subtitle {
+  font-size: 11px; /* Reduced from 13px */
+}
+
+.book-selector.integrated .chapter-subtitle {
+  font-size: 10px; /* Even smaller for "Tap to jump to chapter" */
+}
+
+.book-selector.integrated .chapter-info {
+  font-size: 14px; /* Reduced from 16px */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.book-selector.integrated .chapter-number {
+  font-size: 16px; /* Reduced from 18px */
+}
+
+.book-selector.integrated .chapter-label,
+.book-selector.integrated .chapter-total {
+  font-size: 12px; /* Smaller "Chapter" and "of x" text */
+}
+
+/* Center book selector on tablet and mobile */
+@media (max-width: 1040px) and (min-width: 768px) {
+  .chapter-display-wrapper {
+    justify-content: center;
+  }
+
+  .book-selector.integrated {
+    display: flex;
+    justify-content: center;
+  }
+
+  .book-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .chapter-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+/* Center book selector on mobile */
+@media (max-width: 768px) {
+  .chapter-display-wrapper {
+    justify-content: center;
+  }
+
+  .book-selector.integrated {
+    display: flex;
+    justify-content: center;
+  }
+
+  .book-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .chapter-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg, 24px) var(--spacing-lg, 24px)
+    var(--spacing-md, 16px);
+  border-bottom: 1px solid var(--divider-color, #e5e5ea);
+  background: rgba(0, 122, 255, 0.02);
+}
+
+.menu-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1d1d1f);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.close-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(142, 142, 147, 0.12);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: rgba(142, 142, 147, 0.2);
+  transform: scale(1.05);
+}
+
+.close-button svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary, #86868b);
+}
+
+.dropdown-menu .dropdown-content {
+  max-height: calc(60vh - 80px);
+  overflow-y: auto;
+}
+
+/* Testament Sections */
+.testament-section {
+  padding: var(--spacing-lg, 24px);
+}
+
+.testament-section:not(:last-child) {
+  border-bottom: 1px solid var(--divider-color, #e5e5ea);
+}
+
+.section-header {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary, #86868b);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: var(--spacing-md, 16px);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+}
+
+.section-header::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  background: var(--primary-color, #007aff);
+  border-radius: 2px;
+}
+
+/* Books List */
+.books-list {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(160px, 1fr)
+  ); /* Increased from 140px */
+  gap: var(--spacing-sm, 8px); /* Increased from 4px */
+}
+
+.book-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px); /* Increased padding */
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius, 12px);
+  font-size: 16px; /* Increased from 14px */
+  font-weight: 500;
+  color: var(--text-primary, #1d1d1f);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  min-height: 48px; /* Added minimum height for better touch targets */
+}
+
+.book-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    rgba(0, 122, 255, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+}
+
+.book-item:hover::before {
+  opacity: 0.08;
+}
+
+.book-item:hover {
+  border-color: rgba(0, 122, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.book-item.active {
+  background: var(--primary-color, #007aff);
+  color: white;
+  font-weight: 600;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.book-item.active::before {
+  opacity: 0;
+}
+
+.book-name {
+  flex: 1;
+}
+
+.check-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  transform: scale(0.8);
+}
+
+.book-item.active .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Chapters Grid */
+.chapters-menu {
+  max-height: 70vh;
+  overflow-y: auto; /* Enable scrolling for chapters */
+}
+
+.chapters-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(56px, 1fr)
+  ); /* Increased from 48px */
+  gap: var(--spacing-sm, 8px); /* Increased from 4px */
+  padding: var(--spacing-lg, 24px);
+}
+
+.chapter-item {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius, 12px);
+  font-size: 16px; /* Increased from 14px */
+  font-weight: 600;
+  color: var(--text-primary, #1d1d1f);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 56px; /* Increased from 48px for better touch targets */
+  position: relative;
+  overflow: hidden;
+}
+
+.chapter-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    rgba(0, 122, 255, 0.8) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+}
+
+.chapter-item:hover::before {
+  opacity: 0.08;
+}
+
+.chapter-item:hover {
+  border-color: rgba(0, 122, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-light);
+}
+
+.chapter-item.active {
+  background: var(--primary-color, #007aff);
+  color: white;
+  font-weight: 700;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.chapter-item.active::before {
+  opacity: 0;
+}
+
+.chapter-text {
+  margin-bottom: 2px;
+}
+
+.chapter-item .check-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  transform: scale(0.8);
+}
+
+.chapter-item.active .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .chapter-display-wrapper {
+    gap: var(--spacing-xs, 4px);
+    flex-direction: row;
+  }
+
+  .chapter-display-button {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    min-height: 60px;
+    border-radius: 10px;
+  }
+
+  .book-title {
+    font-size: clamp(16px, 4vw, 20px);
+    line-height: 1.2;
+  }
+
+  .book-subtitle,
+  .chapter-subtitle {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .chapter-info {
+    font-size: 12px;
+  }
+
+  .chapter-number {
+    font-size: 14px;
+  }
+
+  .clickable-indicator {
+    width: 18px;
+    height: 18px;
+  }
+
+  .chevron-icon {
+    width: 8px;
+    height: 8px;
+  }
+
+  .dropdown-menu {
+    position: absolute; /* Changed from fixed */
+    top: calc(100% + var(--spacing-xs, 4px)); /* Position below the parent */
+    left: 0; /* Align with parent's left edge */
+    right: auto; /* Let width be determined by content or max-width */
+    width: auto;
+    min-width: 280px; /* Minimum width for usability */
+    max-width: calc(
+      100vw - var(--spacing-md, 16px) * 2
+    ); /* Prevent overflow from viewport, leave some space */
+    transform: none; /* Remove previous centering transform */
+    max-height: 60vh; /* Adjusted max-height for mobile */
+    border-radius: var(--radius-large, 16px); /* Consistent with desktop */
+    box-shadow: var(--shadow-heavy); /* Consistent with desktop */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Consistent with desktop */
+    background: rgba(255, 255, 255, 0.95); /* Consistent with desktop */
+    backdrop-filter: saturate(180%) blur(20px); /* Consistent with desktop */
+    z-index: 1000; /* Ensure it's on top */
+    overflow-y: auto; /* Enable scrolling */
+    box-sizing: border-box; /* Include padding/border in width/height */
+  }
+
+  .menu-header {
+    padding: var(--spacing-md, 16px);
+  }
+
+  .menu-header h3 {
+    font-size: 16px;
+  }
+
+  .testament-section {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  }
+
+  .section-header {
+    font-size: 11px;
+    margin-bottom: var(--spacing-sm, 8px);
+  }
+
+  .books-list {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .book-item {
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .chapters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    padding: var(--spacing-md, 16px);
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .chapter-item {
+    min-height: 44px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chapter-display-wrapper {
+    flex-direction: column;
+    gap: var(--spacing-xs, 4px);
+  }
+
+  .chapter-display-button {
+    min-height: 50px;
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .book-title {
+    font-size: clamp(14px, 4vw, 18px);
+  }
+
+  .book-subtitle,
+  .chapter-subtitle {
+    font-size: 9px;
+  }
+
+  .chapter-info {
+    font-size: 11px;
+  }
+
+  .chapter-number {
+    font-size: 13px;
+  }
+
+  .dropdown-menu {
+    width: 95vw;
+    max-height: 88vh;
+  }
+
+  .menu-header {
+    padding: var(--spacing-sm, 8px);
+  }
+
+  .menu-header h3 {
+    font-size: 14px;
+  }
+
+  .testament-section {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+  }
+
+  .books-list {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 2px;
+  }
+
+  .book-item {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .chapters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+    padding: var(--spacing-sm, 8px);
+    gap: 2px;
+  }
+
+  .chapter-item {
+    min-height: 38px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .chapter-display-button {
+    min-height: 44px;
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .book-title {
+    font-size: clamp(12px, 4vw, 16px);
+  }
+
+  .book-subtitle,
+  .chapter-subtitle {
+    font-size: 8px;
+  }
+
+  .chapter-info {
+    font-size: 10px;
+  }
+
+  .chapter-number {
+    font-size: 12px;
+  }
+
+  .clickable-indicator {
+    width: 16px;
+    height: 16px;
+  }
+
+  .chevron-icon {
+    width: 6px;
+    height: 6px;
+  }
+
+  .dropdown-menu {
+    width: 98vw;
+    max-height: 90vh;
+  }
+
+  .menu-header {
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .menu-header h3 {
+    font-size: 13px;
+  }
+
+  .books-list {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .book-item {
+    padding: var(--spacing-xs, 4px);
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .chapters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+    padding: var(--spacing-xs, 4px);
+  }
+
+  .chapter-item {
+    min-height: 32px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+}
+
+/* Scrollbar for dropdown */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary, #a1a1a6);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary, #86868b);
+}
+
+/* Focus states for accessibility */
+.chapter-display-button:focus-visible {
+  outline: 2px solid var(--primary-color, #007aff);
+  outline-offset: 2px;
+}
+
+.book-item:focus-visible,
+.chapter-item:focus-visible {
+  outline: 2px solid var(--primary-color, #007aff);
+  outline-offset: 1px;
+}
+
+.close-button:focus-visible {
+  outline: 2px solid var(--primary-color, #007aff);
+  outline-offset: 1px;
+}
+
+.chapter-nav-btn {
+  min-width: 40px;
+  min-height: 40px;
+  font-size: 1.5rem;
+  padding: 8px 14px;
+  margin: 0 8px;
+  border: none;
+  background: #f0f0f0;
+  color: #333;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chapter-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chapter-info-section,
+.chapter-dropdown .selector-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
