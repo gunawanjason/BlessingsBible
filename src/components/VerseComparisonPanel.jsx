@@ -1,0 +1,695 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import "./VerseComparisonPanel.css";
+import ComparisonView from "./ComparisonView";
+import SyncControls from "./SyncControls";
+import { fetchMultipleVerses } from "../services/bibleApi";
+import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
+
+const VerseComparisonPanel = ({
+  selectedBook,
+  selectedChapter,
+  bibleStructure,
+  highlightedVerse,
+  selectedTranslation,
+}) => {
+  const [translations, setTranslations] = useState([
+    selectedTranslation || "KJV",
+    "NIV",
+  ]);
+  const [syncEnabled, setSyncEnabled] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({});
+  const [versePositions, setVersePositions] = useState({});
+  const [alignedVerses, setAlignedVerses] = useState([]);
+  const [versesData, setVersesData] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedVerses, setSelectedVerses] = useState(new Set()); // For synced selections
+  const [independentSelections, setIndependentSelections] = useState({}); // For independent selections per translation
+  const [copyState, setCopyState] = useState("idle"); // 'idle', 'copying', 'copied'
+  const panelRef = useRef(null);
+  const scrollSyncTimeout = useRef(null);
+  const heightSyncTimeout = useRef(null);
+
+  // Get localized book name based on translation language
+  const getLocalizedBookName = useCallback((bookName, translation) => {
+    const language = BOOK_TRANSLATIONS[translation] || "en";
+    const localizedNames = BOOK_NAMES[language];
+    return localizedNames?.[bookName] || bookName; // Fallback to original if not found
+  }, []);
+
+  // Fetch and align verses for all translations
+  const fetchAllTranslationVerses = useCallback(async () => {
+    if (!selectedBook || !selectedChapter || translations.length === 0) return;
+
+    setError(null);
+
+    // Set loading state for each translation being fetched
+    setLoadingStates((prev) => {
+      const newStates = { ...prev };
+      translations.forEach((t) => (newStates[t] = "loading"));
+      return newStates;
+    });
+
+    try {
+      const chapterReference = `${selectedBook} ${selectedChapter}`;
+      const allVersesData = {};
+
+      // Fetch verses for each translation
+      await Promise.all(
+        translations.map(async (translation) => {
+          try {
+            const versesData = await fetchMultipleVerses(
+              translation,
+              chapterReference
+            );
+            allVersesData[translation] = versesData.reduce((acc, verse) => {
+              acc[verse.verse] = verse.text;
+              return acc;
+            }, {});
+            // Clear loading state for successful fetch
+            setLoadingStates((prev) => ({ ...prev, [translation]: null }));
+          } catch (err) {
+            console.error(
+              `Error fetching ${translation} for ${chapterReference}:`,
+              err
+            );
+            allVersesData[translation] = {};
+            setLoadingStates((prev) => ({
+              ...prev,
+              [translation]: {
+                status: "error",
+                message: err.message || "Failed to fetch verses",
+              },
+            }));
+          }
+        })
+      );
+
+      // Get all unique verse numbers across all translations
+      const allVerseNumbers = new Set();
+      Object.values(allVersesData).forEach((translationVerses) => {
+        Object.keys(translationVerses).forEach((verseNum) => {
+          allVerseNumbers.add(parseInt(verseNum));
+        });
+      });
+
+      // Sort verse numbers
+      const sortedVerseNumbers = Array.from(allVerseNumbers).sort(
+        (a, b) => a - b
+      );
+
+      // Create aligned verses data
+      const aligned = sortedVerseNumbers.map((verseNumber) => {
+        const verseData = { verse: verseNumber };
+        translations.forEach((translation) => {
+          verseData[translation] =
+            allVersesData[translation][verseNumber] || null;
+        });
+        return verseData;
+      });
+
+      setVersesData(allVersesData);
+      setAlignedVerses(aligned);
+    } catch (err) {
+      setError(err.message);
+      setVersesData({});
+      setAlignedVerses([]);
+      // Clear all loading states on error
+      setLoadingStates({});
+    }
+  }, [selectedBook, selectedChapter, translations]);
+
+  // Align verse heights across all panels (optimized for single-pass update)
+  const alignVerseHeights = useCallback(() => {
+    if (!panelRef.current || alignedVerses.length === 0) return;
+
+    // Use requestAnimationFrame for smooth UI updates
+    requestAnimationFrame(() => {
+      const verseHeights = new Map();
+
+      // First pass: Measure all verse heights without modifying DOM
+      alignedVerses.forEach((verseData) => {
+        let maxHeight = 0;
+        translations.forEach((translation) => {
+          const verseElement = panelRef.current.querySelector(
+            `#view-${translation}-verse-${verseData.verse}`
+          );
+          if (verseElement) {
+            // Force layout calculation by reading height
+            const height = verseElement.getBoundingClientRect().height;
+            maxHeight = Math.max(maxHeight, height);
+          }
+        });
+        verseHeights.set(verseData.verse, maxHeight);
+      });
+
+      // Second pass: Apply all height changes in one batch
+      alignedVerses.forEach((verseData) => {
+        const targetHeight = verseHeights.get(verseData.verse);
+        if (targetHeight) {
+          translations.forEach((translation) => {
+            const verseElement = panelRef.current.querySelector(
+              `#view-${translation}-verse-${verseData.verse}`
+            );
+            if (verseElement) {
+              verseElement.style.minHeight = `${targetHeight}px`;
+            }
+          });
+        }
+      });
+    });
+  }, [alignedVerses, translations]);
+
+  // Debounced height sync for multiple verse operations
+  const debouncedHeightSync = useCallback(() => {
+    // Clear any pending height sync
+    if (heightSyncTimeout.current) {
+      clearTimeout(heightSyncTimeout.current);
+    }
+
+    // Debounce height sync to calculate once for multiple operations
+    heightSyncTimeout.current = setTimeout(() => {
+      if (panelRef.current && alignedVerses.length > 0) {
+        // First reset all heights to auto to get natural heights
+        alignedVerses.forEach((verseData) => {
+          translations.forEach((translation) => {
+            const verseElement = panelRef.current.querySelector(
+              `#view-${translation}-verse-${verseData.verse}`
+            );
+            if (verseElement) {
+              verseElement.style.minHeight = "auto";
+              verseElement.style.height = "auto";
+            }
+          });
+        });
+
+        // Then recalculate alignment after heights have reset
+        requestAnimationFrame(() => {
+          alignVerseHeights();
+        });
+      }
+    }, 100);
+  }, [alignedVerses, translations, alignVerseHeights]);
+
+  // Sync height for a specific verse row only (optimized for single verse operations)
+  const syncSingleVerseHeight = useCallback(
+    (verseNumber) => {
+      if (!panelRef.current) return;
+
+      requestAnimationFrame(() => {
+        const verseElements = [];
+        let maxHeight = 0;
+
+        // Step 1: Collect all verse elements for this specific verse
+        translations.forEach((translation) => {
+          const verseElement = panelRef.current.querySelector(
+            `#view-${translation}-verse-${verseNumber}`
+          );
+          if (verseElement) {
+            verseElement.classList.add("height-syncing");
+            verseElements.push(verseElement);
+          }
+        });
+
+        // Step 2: Reset all heights to auto to get natural heights (important for shrinking on unselect)
+        verseElements.forEach((element) => {
+          element.style.minHeight = "auto";
+          element.style.height = "auto";
+        });
+
+        // Step 3: Force reflow to ensure heights are calculated with current content state
+        verseElements.forEach((element) => {
+          element.offsetHeight; // Force reflow
+        });
+
+        // Step 4: Find the maximum natural height after reset
+        verseElements.forEach((element) => {
+          const height = element.getBoundingClientRect().height;
+          maxHeight = Math.max(maxHeight, height);
+        });
+
+        // Step 5: Apply the new max height to all verse elements in this row
+        if (maxHeight > 0) {
+          verseElements.forEach((element) => {
+            element.style.minHeight = `${maxHeight}px`;
+          });
+        }
+
+        // Step 6: Clean up animation class after transition
+        setTimeout(() => {
+          verseElements.forEach((element) => {
+            element.classList.remove("height-syncing");
+          });
+        }, 450);
+      });
+    },
+    [translations]
+  );
+
+  // Track verse positions for alignment
+  const updateVersePosition = useCallback((id, verse, position) => {
+    setVersePositions((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [verse]: position,
+      },
+    }));
+  }, []);
+
+  // Handle adding/removing translations
+  const handleAddTranslation = useCallback((translationId) => {
+    setTranslations((prev) => [...prev, translationId]);
+  }, []);
+
+  const handleRemoveTranslation = useCallback(
+    (translationId) => {
+      setTranslations((prev) => {
+        // Don't allow removing the first translation (synced with main dropdown)
+        if (prev.length <= 1 || prev[0] === translationId) {
+          return prev;
+        }
+        return prev.filter((t) => t !== translationId);
+      });
+      // Clear loading state for removed translation
+      setLoadingStates((prev) => {
+        const newStates = { ...prev };
+        delete newStates[translationId];
+        return newStates;
+      });
+      // Trigger debounced height sync since there's more horizontal space now
+      debouncedHeightSync();
+    },
+    [debouncedHeightSync]
+  );
+
+  // Toggle sync between panels
+  const toggleSync = useCallback(() => {
+    setSyncEnabled((prev) => !prev);
+  }, []);
+
+  // Handle verse selection (synced mode)
+  const handleVerseSelect = useCallback(
+    (verseNumber) => {
+      if (syncEnabled) {
+        setSelectedVerses((prev) => {
+          const newSelected = new Set(prev);
+          if (newSelected.has(verseNumber)) {
+            newSelected.delete(verseNumber);
+          } else {
+            newSelected.add(verseNumber);
+          }
+          return newSelected;
+        });
+
+        // Sync height for just this specific verse row
+        syncSingleVerseHeight(verseNumber);
+      }
+    },
+    [syncEnabled, syncSingleVerseHeight]
+  );
+
+  // Handle verse selection (independent mode per translation)
+  const handleIndependentVerseSelect = useCallback(
+    (translationId, verseNumber) => {
+      if (!syncEnabled) {
+        setIndependentSelections((prev) => {
+          const newSelections = { ...prev };
+          if (!newSelections[translationId]) {
+            newSelections[translationId] = new Set();
+          } else {
+            newSelections[translationId] = new Set(
+              newSelections[translationId]
+            );
+          }
+
+          if (newSelections[translationId].has(verseNumber)) {
+            newSelections[translationId].delete(verseNumber);
+          } else {
+            newSelections[translationId].add(verseNumber);
+          }
+
+          return newSelections;
+        });
+
+        // Sync height for just this specific verse row
+        syncSingleVerseHeight(verseNumber);
+      }
+    },
+    [syncEnabled, syncSingleVerseHeight]
+  );
+
+  // Clear selections when chapter changes
+  useEffect(() => {
+    setSelectedVerses(new Set());
+    setIndependentSelections({});
+  }, [selectedBook, selectedChapter]);
+
+  // Copy selected verses from comparison view
+  const copySelectedVerses = useCallback(async () => {
+    const hasSelections = syncEnabled
+      ? selectedVerses.size > 0
+      : Object.values(independentSelections).some((set) => set && set.size > 0);
+
+    if (!hasSelections) return;
+
+    setCopyState("copying");
+
+    try {
+      if (syncEnabled) {
+        // Synced mode: copy all selected verses from all translations
+        const sortedVerseNumbers = Array.from(selectedVerses).sort(
+          (a, b) => a - b
+        );
+
+        let verseRange;
+        if (sortedVerseNumbers.length === 1) {
+          verseRange = sortedVerseNumbers[0].toString();
+        } else {
+          const start = sortedVerseNumbers[0];
+          const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
+          verseRange = `${start}-${end}`;
+        }
+
+        const translationContents = translations.map((translation) => {
+          const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+            const verseData = alignedVerses.find(
+              (v) => v.verse === verseNumber
+            );
+            return verseData?.[translation] || "";
+          });
+
+          const content = verseTexts.filter((text) => text).join(" ");
+          const localizedBook = getLocalizedBookName(selectedBook, translation);
+          const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
+          return content ? `${header}\n${content}` : header;
+        });
+
+        const textToCopy = translationContents.join("\n\n");
+        await navigator.clipboard.writeText(textToCopy);
+      } else {
+        // Independent mode: copy selected verses from each translation separately
+        const translationContents = translations
+          .map((translation) => {
+            const translationSelections = independentSelections[translation];
+            if (!translationSelections || translationSelections.size === 0)
+              return null;
+
+            const sortedVerseNumbers = Array.from(translationSelections).sort(
+              (a, b) => a - b
+            );
+
+            let verseRange;
+            if (sortedVerseNumbers.length === 1) {
+              verseRange = sortedVerseNumbers[0].toString();
+            } else {
+              const start = sortedVerseNumbers[0];
+              const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
+              verseRange = `${start}-${end}`;
+            }
+
+            const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+              const verseData = alignedVerses.find(
+                (v) => v.verse === verseNumber
+              );
+              return verseData?.[translation] || "";
+            });
+
+            const content = verseTexts.filter((text) => text).join(" ");
+            const localizedBook = getLocalizedBookName(
+              selectedBook,
+              translation
+            );
+            const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
+            return content ? `${header}\n${content}` : header;
+          })
+          .filter((content) => content !== null);
+
+        const textToCopy = translationContents.join("\n\n");
+        await navigator.clipboard.writeText(textToCopy);
+      }
+
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+      setCopyState("idle");
+    }
+  }, [
+    syncEnabled,
+    selectedVerses,
+    independentSelections,
+    selectedBook,
+    selectedChapter,
+    translations,
+    alignedVerses,
+    getLocalizedBookName,
+  ]);
+
+  // Enhanced scroll synchronization with verse alignment (only for comparison view)
+  const handleScrollSync = useCallback(
+    (scrollPosition, sourceId, verse) => {
+      if (!syncEnabled || !panelRef.current) return;
+
+      // Clear any pending scroll sync
+      if (scrollSyncTimeout.current) {
+        clearTimeout(scrollSyncTimeout.current);
+      }
+
+      // Debounce scroll events for smoother performance
+      scrollSyncTimeout.current = setTimeout(() => {
+        const containers = panelRef.current.querySelectorAll(
+          ".comparison-view-container"
+        );
+
+        containers.forEach((container) => {
+          if (container.id !== sourceId) {
+            // Find matching verse position in target container
+            const targetVersePos = versePositions[container.id]?.[verse];
+            if (targetVersePos) {
+              // Calculate offset to center the verse
+              const containerHeight = container.clientHeight;
+              const scrollTo =
+                targetVersePos.top -
+                containerHeight / 2 +
+                targetVersePos.height / 2;
+              container.scrollTo({
+                top: scrollTo,
+                behavior: "smooth",
+              });
+            } else {
+              // Fallback to simple scroll position sync
+              container.scrollTop = scrollPosition;
+            }
+          }
+        });
+      }, 50);
+    },
+    [syncEnabled, versePositions]
+  );
+
+  // Fetch verses when book, chapter, or translations change
+  useEffect(() => {
+    fetchAllTranslationVerses();
+  }, [fetchAllTranslationVerses]);
+
+  // Align verse heights after verses are loaded
+  useEffect(() => {
+    if (!isLoading && alignedVerses.length > 0) {
+      debouncedHeightSync();
+    }
+  }, [
+    isLoading,
+    alignedVerses,
+    debouncedHeightSync,
+    selectedBook,
+    selectedChapter,
+  ]);
+
+  // Update heights for all relevant changes:
+  // - Verse selections (selecting/unselecting, both sync and independent modes)
+  // - Translation changes (adding/removing translations)
+  // - Initial load and data changes
+  useEffect(() => {
+    if (alignedVerses.length > 0) {
+      // Use delay to allow DOM to update first
+      const timer = setTimeout(() => {
+        // console.log("Triggering height sync for:", {
+        //   selectedVerses: Array.from(selectedVerses),
+        //   translations,
+        //   alignedVerses: alignedVerses.length,
+        // });
+        alignVerseHeights();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    selectedVerses, // Sync selections
+    independentSelections, // Independent selections
+    translations, // Translation list changes
+    alignVerseHeights,
+    alignedVerses.length,
+  ]);
+
+  // Recalculate verse heights when book or chapter changes
+  useEffect(() => {
+    debouncedHeightSync();
+  }, [selectedBook, selectedChapter, debouncedHeightSync]);
+
+  // Re-align on window resize with proper height reset
+  useEffect(() => {
+    const handleResize = () => {
+      if (alignedVerses.length > 0 && panelRef.current) {
+        // First reset all heights to auto to get natural heights
+        alignedVerses.forEach((verseData) => {
+          translations.forEach((translation) => {
+            const verseElement = panelRef.current.querySelector(
+              `#view-${translation}-verse-${verseData.verse}`
+            );
+            if (verseElement) {
+              verseElement.style.minHeight = "auto";
+              verseElement.style.height = "auto";
+            }
+          });
+        });
+
+        // Then recalculate alignment after heights have reset
+        requestAnimationFrame(() => {
+          alignVerseHeights();
+        });
+      }
+    };
+
+    // Debounce resize events for better performance
+    let resizeTimeout;
+    const debouncedResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(handleResize, 100);
+    };
+
+    window.addEventListener("resize", debouncedResize);
+    return () => {
+      window.removeEventListener("resize", debouncedResize);
+      clearTimeout(resizeTimeout);
+    };
+  }, [alignedVerses, alignVerseHeights, translations]);
+
+  // Update first translation when selectedTranslation changes
+  useEffect(() => {
+    if (
+      selectedTranslation &&
+      translations.length > 0 &&
+      translations[0] !== selectedTranslation
+    ) {
+      setTranslations((prev) => [selectedTranslation, ...prev.slice(1)]);
+    }
+  }, [selectedTranslation, translations]);
+
+  // Clear timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollSyncTimeout.current) {
+        clearTimeout(scrollSyncTimeout.current);
+      }
+      if (heightSyncTimeout.current) {
+        clearTimeout(heightSyncTimeout.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="verse-comparison-panel" ref={panelRef}>
+      <div className="panel-header">
+        <h3>Verse Comparison</h3>
+        <div className="header-controls">
+          {(() => {
+            const hasSelections = syncEnabled
+              ? selectedVerses.size > 0
+              : Object.values(independentSelections).some(
+                  (set) => set && set.size > 0
+                );
+
+            const totalSelections = syncEnabled
+              ? selectedVerses.size
+              : Object.values(independentSelections).reduce(
+                  (total, set) => total + (set?.size || 0),
+                  0
+                );
+
+            return (
+              hasSelections && (
+                <button
+                  onClick={copySelectedVerses}
+                  className={`copy-button ${copyState}`}
+                  disabled={copyState === "copying"}
+                  title={`Copy ${totalSelections} selected verse${
+                    totalSelections > 1 ? "s" : ""
+                  }`}
+                >
+                  {copyState === "copying" && (
+                    <>
+                      ⏳ <span className="copy-text">Copying...</span>
+                    </>
+                  )}
+                  {copyState === "copied" && (
+                    <>
+                      ✅ <span className="copy-text">Copied</span>
+                    </>
+                  )}
+                  {copyState === "idle" && (
+                    <>
+                      📋 <span className="copy-text">Copy</span>
+                      <span className="copy-count">{totalSelections}</span>
+                    </>
+                  )}
+                </button>
+              )
+            );
+          })()}
+          <SyncControls
+            translations={translations}
+            onAddTranslation={handleAddTranslation}
+            onRemoveTranslation={handleRemoveTranslation}
+            syncEnabled={syncEnabled}
+            onToggleSync={toggleSync}
+          />
+        </div>
+      </div>
+
+      {error && <div className="error-message">Error: {error}</div>}
+
+      <div className="comparison-views-container">
+        {translations.map((translation) => (
+          <ComparisonView
+            key={translation}
+            id={`view-${translation}`}
+            translation={translation}
+            book={selectedBook}
+            chapter={selectedChapter}
+            bibleStructure={bibleStructure}
+            highlightedVerse={highlightedVerse}
+            onScroll={handleScrollSync}
+            loading={isLoading}
+            onVersePositionUpdate={updateVersePosition}
+            alignedVerses={alignedVerses}
+            useAlignedData={true}
+            selectedVerses={
+              syncEnabled
+                ? selectedVerses
+                : independentSelections[translation] || new Set()
+            }
+            onVerseSelect={
+              syncEnabled
+                ? handleVerseSelect
+                : (verseNumber) =>
+                    handleIndependentVerseSelect(translation, verseNumber)
+            }
+            syncEnabled={syncEnabled}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default React.memo(VerseComparisonPanel);

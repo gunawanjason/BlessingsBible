@@ -309,6 +309,40 @@ body {
   background: var(--bg-tertiary);
 }
 
+/* View Switcher */
+.view-switcher {
+  display: flex;
+  margin: var(--spacing-md) auto;
+  padding: var(--spacing-xs);
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  max-width: 300px;
+  box-shadow: var(--shadow-light);
+}
+
+.view-tab {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.view-tab.active {
+  color: var(--primary-color);
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-light);
+}
+
+.view-tab:not(:last-child) {
+  margin-right: var(--spacing-xs);
+}
+
 /* Animations */
 @keyframes slideDown {
   from {
