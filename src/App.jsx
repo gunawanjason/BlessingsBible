@@ -3,22 +3,60 @@ import SearchBar from "./components/SearchBar";
 import TranslationSwitcher from "./components/TranslationSwitcher";
 import BookSelector from "./components/BookSelector";
 import ChapterReader from "./components/ChapterReader";
+import VerseComparisonPanel from "./components/VerseComparisonPanel";
 import { fetchVerses } from "./services/bibleApi";
 import "./App.css";
+import { sendPageView, sendEvent } from "./utils/ga";
 
 function App() {
+  const [selectedBook, setSelectedBook] = useState("John");
+  const [selectedChapter, setSelectedChapter] = useState(1);
+  const [viewMode, setViewMode] = useState("reader"); // 'reader' or 'comparison'
   const [selectedTranslation, setSelectedTranslation] = useState("TB");
+
+  // Track view changes for analytics
+  useEffect(() => {
+    sendPageView(
+      `/${selectedTranslation}/${selectedBook}/${selectedChapter}/${viewMode}`
+    );
+    sendEvent({
+      action: "view_switch",
+      category: "navigation",
+      label: viewMode,
+    });
+  }, [viewMode, selectedTranslation, selectedBook, selectedChapter]);
   const [verses, setVerses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [bibleStructure, setBibleStructure] = useState(null);
-  const [selectedBook, setSelectedBook] = useState("John");
-  const [selectedChapter, setSelectedChapter] = useState(1);
   const [highlightedVerse, setHighlightedVerse] = useState(null);
   const [selectedVerses, setSelectedVerses] = useState(new Set());
   const [copyState, setCopyState] = useState("idle");
   const [showMobileMenu, setShowMobileMenu] = useState(true);
   const mobileMenuRef = useRef(null);
+
+  // Heartbeat for engagement rate
+  useEffect(() => {
+    const heartbeat = setInterval(() => {
+      sendEvent({
+        action: "heartbeat",
+        category: "engagement",
+        label: `${selectedTranslation}/${selectedBook}/${selectedChapter}/${viewMode}`,
+      });
+    }, 15000); // 15 seconds
+    return () => clearInterval(heartbeat);
+  }, [selectedTranslation, selectedBook, selectedChapter, viewMode]);
+
+  // Track pageview on book/chapter/translation change
+  useEffect(() => {
+    sendPageView(`/${selectedTranslation}/${selectedBook}/${selectedChapter}`);
+  }, [selectedTranslation, selectedBook, selectedChapter]);
+
+  // Clear selections when switching between views
+  useEffect(() => {
+    setSelectedVerses(new Set());
+    setCopyState("idle");
+  }, [viewMode]);
 
   // Function to generate a random verse reference
   const generateRandomVerse = (bibleData) => {
@@ -77,22 +115,19 @@ function App() {
     }
   };
 
-  // Load Bible structure data and random verse on every reload
+  // Load Bible structure data
   useEffect(() => {
     const loadBibleStructure = async () => {
       try {
         const response = await fetch("/bible-structure.json");
         const data = await response.json();
         setBibleStructure(data);
-
-        // Load random verse on every page load
-        await loadRandomVerse(data);
       } catch (error) {
         console.error("Failed to load Bible structure:", error);
       }
     };
     loadBibleStructure();
-  }, [selectedTranslation]);
+  }, []);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -136,6 +171,13 @@ function App() {
         } else {
           setHighlightedVerse(null);
         }
+        // Send GA event for verse search
+        sendEvent({
+          action: "verse_search",
+          category: "engagement",
+          label: verseReference,
+          value: fetchedVerses.length,
+        });
       }
 
       setVerses(fetchedVerses);
@@ -149,6 +191,12 @@ function App() {
 
   const handleTranslationChange = async (translation) => {
     setSelectedTranslation(translation);
+    // Send GA event for translation change
+    sendEvent({
+      action: "translation_change",
+      category: "engagement",
+      label: translation,
+    });
     // Re-fetch current verses in new translation if any are displayed
     if (verses.length > 0 && verses[0].book) {
       setLoading(true);
@@ -174,13 +222,28 @@ function App() {
 
   const handleBookChange = (bookName) => {
     setSelectedBook(bookName);
+    sendEvent({
+      action: "book_change",
+      category: "navigation",
+      label: bookName,
+    });
   };
 
   const handleChapterChange = (chapterNumber, bookName = null) => {
     setSelectedChapter(chapterNumber);
     if (bookName) {
       setSelectedBook(bookName);
+      sendEvent({
+        action: "book_change",
+        category: "navigation",
+        label: bookName,
+      });
     }
+    sendEvent({
+      action: "chapter_change",
+      category: "navigation",
+      label: `${bookName || selectedBook} ${chapterNumber}`,
+    });
     // Clear highlighting when manually changing chapters
     setHighlightedVerse(null);
     setVerses([]);
@@ -189,6 +252,11 @@ function App() {
 
   // Navigation handlers for the navbar
   const handlePreviousChapter = () => {
+    sendEvent({
+      action: "prev_chapter_click",
+      category: "navigation",
+      label: `${selectedBook} ${selectedChapter}`,
+    });
     if (selectedChapter > 1) {
       handleChapterChange(selectedChapter - 1);
     } else if (bibleStructure) {
@@ -203,6 +271,11 @@ function App() {
   };
 
   const handleNextChapter = () => {
+    sendEvent({
+      action: "next_chapter_click",
+      category: "navigation",
+      label: `${selectedBook} ${selectedChapter}`,
+    });
     const currentBook = bibleStructure?.books.find(
       (book) => book.name === selectedBook
     );
@@ -279,6 +352,13 @@ function App() {
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopyState("copied");
+      // Send GA event for verse copy
+      sendEvent({
+        action: "copy_verses",
+        category: "engagement",
+        label: header,
+        value: sortedVerseNumbers.length,
+      });
       setTimeout(() => setCopyState("idle"), 2000);
     } catch (err) {
       console.error("Failed to copy text: ", err);
@@ -337,7 +417,14 @@ function App() {
               <button
                 className="mobile-menu-toggle"
                 onClick={() => {
-                  setShowMobileMenu(!showMobileMenu);
+                  setShowMobileMenu((prev) => {
+                    sendEvent({
+                      action: "mobile_menu_toggle",
+                      category: "ui",
+                      label: !prev ? "open" : "close",
+                    });
+                    return !prev;
+                  });
                 }}
                 aria-label="Toggle mobile menu"
                 aria-expanded={showMobileMenu}
@@ -401,18 +488,50 @@ function App() {
       {error && <div className="status-bar error">{error}</div>}
 
       <main className="app-main">
-        <ChapterReader
-          selectedBook={selectedBook}
-          selectedChapter={selectedChapter}
-          onBookChange={handleBookChange}
-          onChapterChange={handleChapterChange}
-          bibleStructure={bibleStructure}
-          highlightedVerse={highlightedVerse}
-          selectedTranslation={selectedTranslation}
-          selectedVerses={selectedVerses}
-          setSelectedVerses={setSelectedVerses}
-          showCopyInNav={true}
-        />
+        <div className="view-switcher">
+          <button
+            className={`view-tab ${viewMode === "reader" ? "active" : ""}`}
+            onClick={() => setViewMode("reader")}
+          >
+            Reader
+          </button>
+          <button
+            className={`view-tab ${viewMode === "comparison" ? "active" : ""}`}
+            onClick={() => {
+              setViewMode("comparison");
+              sendEvent({
+                action: "tab_switch",
+                category: "navigation",
+                label: "comparison",
+              });
+            }}
+          >
+            Comparison
+          </button>
+        </div>
+
+        {viewMode === "reader" ? (
+          <ChapterReader
+            selectedBook={selectedBook}
+            selectedChapter={selectedChapter}
+            onBookChange={handleBookChange}
+            onChapterChange={handleChapterChange}
+            bibleStructure={bibleStructure}
+            highlightedVerse={highlightedVerse}
+            selectedTranslation={selectedTranslation}
+            selectedVerses={selectedVerses}
+            setSelectedVerses={setSelectedVerses}
+            showCopyInNav={true}
+          />
+        ) : (
+          <VerseComparisonPanel
+            selectedBook={selectedBook}
+            selectedChapter={selectedChapter}
+            bibleStructure={bibleStructure}
+            highlightedVerse={highlightedVerse}
+            selectedTranslation={selectedTranslation}
+          />
+        )}
       </main>
     </div>
   );

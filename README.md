@@ -9,6 +9,8 @@ A modern, fast, and user-friendly Bible reading web application built with React
 - 📖 **Book & Chapter Navigation**: Quickly select any book and chapter.
 - 🔍 **Search**: Find verses or passages by keyword.
 - 🌐 **Translation Switcher**: Instantly switch between Bible translations.
+- 🔄 **Verse Comparison**: Side-by-side comparison of translations with synchronized scrolling.
+- 🖥️ **Multi-Panel View**: Compare 2-3 translations simultaneously.
 - ✨ **Responsive UI**: Clean, mobile-friendly design.
 - ⚡ **Fast Performance**: Powered by Vite and React.
 - 🗂️ **Structured Data**: Uses a structured JSON for Bible books/chapters.
@@ -71,8 +73,11 @@ BlessingsBible/
 │   ├── components/            # React components
 │   │   ├── BookSelector.jsx
 │   │   ├── ChapterReader.jsx
+│   │   ├── ComparisonView.jsx
 │   │   ├── SearchBar.jsx
+│   │   ├── SyncControls.jsx
 │   │   ├── TranslationSwitcher.jsx
+│   │   ├── VerseComparisonPanel.jsx
 │   │   └── VerseDisplay.jsx
 │   ├── services/
 │   │   └── bibleApi.js        # Bible data fetching logic
@@ -156,6 +161,15 @@ const verses = await fetchMultipleVerses('KJV', 'Genesis 1:1-3');
 
 // General fetch (auto-detects single, range, or multiple)
 const results = await fetchVerses('ESV', 'John 3:16,Genesis 1:1-3');
+
+// Comparison view example - fetch same verse in different translations
+const [esvVerse, kjvVerse] = await Promise.all([
+  fetchSingleVerse('ESV', 'John', 3, 16),
+  fetchSingleVerse('KJV', 'John', 3, 16)
+]);
+
+// Fetch multiple verses for synchronized scrolling
+const comparisonVerses = await fetchMultipleVerses('ESV', 'John 3:16-18,John 3:16-18');
 ```
 
 ---

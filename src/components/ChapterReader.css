@@ -262,7 +262,7 @@
 
 .verse-item {
   display: flex;
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: var(--spacing-xs, 4px);
   padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
   border-radius: 8px;
   transition: all 0.2s ease;
