@@ -79,6 +79,10 @@
   flex: 1;
 }
 
+.comparison-view-container:last-child .verses-list {
+  padding-right: var(--spacing-lg);
+}
+
 .verse-item.selectable {
   cursor: pointer;
 }
@@ -263,6 +267,10 @@
     flex: 1;
     /* Remove individual scrolling - parent handles it */
     overflow-y: visible;
+  }
+
+  .comparison-view-container:last-child .verses-list {
+    padding-right: var(--spacing-md);
   }
 }
 

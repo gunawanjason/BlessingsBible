@@ -19,8 +19,27 @@
 .chapter-display-wrapper {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: var(--spacing-sm, 8px);
   align-items: stretch;
+  justify-content: center;
+}
+
+/* Keep horizontal layout but ensure centering for 640px and lower */
+@media (max-width: 640px) {
+  .chapter-display-wrapper {
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+/* Make dropdowns flexible only on very small screens (460px and lower) */
+@media (max-width: 460px) {
+  .book-dropdown,
+  .chapter-dropdown {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .chapter-display-container {

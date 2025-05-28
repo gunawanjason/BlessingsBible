@@ -594,25 +594,26 @@ body {
   }
 
   .nav-controls {
-    flex-direction: column;
-    gap: var(--spacing-xs); /* Reduced gap between controls */
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
     align-items: center;
+    justify-content: center;
     width: 100%;
   }
 
   .nav-primary-controls {
-    width: 100%;
-    max-width: none;
+    min-width: 280px;
+    max-width: 500px;
     display: flex;
     justify-content: center;
   }
 
   .nav-secondary-controls {
-    width: 100%;
+    display: flex;
     justify-content: center;
-    gap: var(
-      --spacing-xs
-    ); /* Reduced gap between search and translation switcher */
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
   }
 
   .nav-secondary-controls .search-bar {
@@ -734,6 +735,8 @@ select,
   .nav-controls {
     align-items: center;
     display: none;
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
 
   .nav-controls.mobile-open {
@@ -741,11 +744,13 @@ select,
   }
 
   .nav-primary-controls {
+    width: 100%;
     display: flex;
     justify-content: center;
   }
 
   .nav-secondary-controls {
+    width: 100%;
     justify-content: center;
   }
 
@@ -789,10 +794,25 @@ select,
 
   .nav-controls {
     display: none;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: center;
+    width: 100%;
   }
 
   .nav-controls.mobile-open {
     display: flex;
+  }
+
+  .nav-primary-controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-secondary-controls {
+    width: 100%;
+    justify-content: center;
   }
 }
 
