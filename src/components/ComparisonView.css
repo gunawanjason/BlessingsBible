@@ -30,8 +30,11 @@
   flex-direction: column;
   min-width: 0;
   border-right: 1px solid var(--divider-color);
-  overflow-y: auto;
-  scroll-behavior: smooth;
+  overflow-y: hidden; /* Disable individual container scrolling */
+  /* Improve scroll performance */
+  will-change: scroll-position;
+  /* Prevent layout shifts during scroll sync */
+  contain: layout style;
 }
 
 .comparison-view-container:last-child {
@@ -81,17 +84,17 @@
 }
 
 .verse-item.selectable:hover {
-  background-color: var(--verse-hover-bg, rgba(0, 122, 255, 0.05));
+  background-color: var(--bg-secondary);
 }
 
 .verse-item.selected {
-  background-color: var(--verse-selected-bg, rgba(0, 122, 255, 0.15));
-  border: 1px solid var(--primary-color, #007aff);
+  background-color: rgba(0, 122, 255, 0.15);
+  border: 1px solid var(--primary-color);
 }
 
 .verse-item.highlighted {
-  background-color: var(--verse-highlighted-bg, rgba(0, 122, 255, 0.1));
-  box-shadow: 0 0 0 1px var(--primary-color);
+  background-color: rgba(255, 149, 0, 0.15);
+  box-shadow: 0 0 0 1px var(--accent-color);
 }
 
 .verse-text {
@@ -186,13 +189,115 @@
   }
 }
 
+/* Mobile snapping scroll styles - applied to parent container */
+.comparison-scroll-container {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 0;
+  scroll-behavior: smooth;
+}
+
 @media (max-width: 768px) {
+  .comparison-scroll-container {
+    width: 100vw;
+    max-width: 100vw;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    padding: 0;
+    /* Enable momentum scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+
   .comparison-view-container {
+    min-width: calc(100vw - 40px);
+    max-width: calc(100vw - 40px);
+    flex: 0 0 calc(100vw - 40px);
+    scroll-snap-align: center;
     border-right: none;
-    border-bottom: 1px solid var(--divider-color);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    margin: 0 20px;
+    border-radius: 8px;
+    border: 1px solid var(--divider-color);
+    background: var(--bg-primary);
+    overflow-y: auto;
+    /* Enable momentum scrolling for individual panels */
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
 
   .comparison-view-container:last-child {
-    border-bottom: none;
+    border-right: none;
   }
+
+  .view-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--divider-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .view-header h4 {
+    margin: 0;
+    text-align: center;
+    max-width: 90%;
+    width: 100%;
+    font-size: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .verses-list {
+    padding: var(--spacing-md);
+    flex: 1;
+    /* Remove individual scrolling - parent handles it */
+    overflow-y: visible;
+  }
+}
+
+@media (min-width: 769px) {
+  .comparison-scroll-container {
+    overflow-x: visible;
+    scroll-snap-type: none;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .comparison-view-container {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--divider-color);
+    background: transparent;
+    overflow-y: auto;
+  }
+
+  .comparison-view-container:last-child {
+    border-right: none;
+  }
+}
+
+/* Sync scroll states */
+.comparison-view-container.syncing-scroll {
+  /* Temporarily disable pointer events during sync to prevent interference */
+  pointer-events: none;
+}
+
+.comparison-view-container.syncing-scroll * {
+  /* Ensure all child elements are also temporarily non-interactive */
+  pointer-events: none;
 }

@@ -11,21 +11,23 @@ const VerseComparisonPanel = ({
   bibleStructure,
   highlightedVerse,
   selectedTranslation,
+  selectedVerses,
+  setSelectedVerses,
+  independentSelections,
+  setIndependentSelections,
+  syncEnabled,
+  setSyncEnabled,
+  showCopyInNav = false,
 }) => {
   const [translations, setTranslations] = useState([
     selectedTranslation || "KJV",
     "NIV",
   ]);
-  const [syncEnabled, setSyncEnabled] = useState(true);
   const [loadingStates, setLoadingStates] = useState({});
-  const [versePositions, setVersePositions] = useState({});
   const [alignedVerses, setAlignedVerses] = useState([]);
   const [versesData, setVersesData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedVerses, setSelectedVerses] = useState(new Set()); // For synced selections
-  const [independentSelections, setIndependentSelections] = useState({}); // For independent selections per translation
-  const [copyState, setCopyState] = useState("idle"); // 'idle', 'copying', 'copied'
   const panelRef = useRef(null);
   const scrollSyncTimeout = useRef(null);
   const heightSyncTimeout = useRef(null);
@@ -42,6 +44,7 @@ const VerseComparisonPanel = ({
     if (!selectedBook || !selectedChapter || translations.length === 0) return;
 
     setError(null);
+    setIsLoading(true);
 
     // Set loading state for each translation being fetched
     setLoadingStates((prev) => {
@@ -116,6 +119,8 @@ const VerseComparisonPanel = ({
       setAlignedVerses([]);
       // Clear all loading states on error
       setLoadingStates({});
+    } finally {
+      setIsLoading(false);
     }
   }, [selectedBook, selectedChapter, translations]);
 
@@ -246,17 +251,6 @@ const VerseComparisonPanel = ({
     [translations]
   );
 
-  // Track verse positions for alignment
-  const updateVersePosition = useCallback((id, verse, position) => {
-    setVersePositions((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [verse]: position,
-      },
-    }));
-  }, []);
-
   // Handle adding/removing translations
   const handleAddTranslation = useCallback((translationId) => {
     setTranslations((prev) => [...prev, translationId]);
@@ -286,7 +280,7 @@ const VerseComparisonPanel = ({
   // Toggle sync between panels
   const toggleSync = useCallback(() => {
     setSyncEnabled((prev) => !prev);
-  }, []);
+  }, [setSyncEnabled]);
 
   // Handle verse selection (synced mode)
   const handleVerseSelect = useCallback(
@@ -343,7 +337,12 @@ const VerseComparisonPanel = ({
   useEffect(() => {
     setSelectedVerses(new Set());
     setIndependentSelections({});
-  }, [selectedBook, selectedChapter]);
+  }, [
+    selectedBook,
+    selectedChapter,
+    setSelectedVerses,
+    setIndependentSelections,
+  ]);
 
   // Copy selected verses from comparison view
   const copySelectedVerses = useCallback(async () => {
@@ -352,8 +351,6 @@ const VerseComparisonPanel = ({
       : Object.values(independentSelections).some((set) => set && set.size > 0);
 
     if (!hasSelections) return;
-
-    setCopyState("copying");
 
     try {
       if (syncEnabled) {
@@ -428,12 +425,9 @@ const VerseComparisonPanel = ({
         const textToCopy = translationContents.join("\n\n");
         await navigator.clipboard.writeText(textToCopy);
       }
-
-      setCopyState("copied");
-      setTimeout(() => setCopyState("idle"), 2000);
     } catch (err) {
       console.error("Failed to copy text:", err);
-      setCopyState("idle");
+      throw err; // Re-throw so the parent can handle the error state
     }
   }, [
     syncEnabled,
@@ -446,47 +440,20 @@ const VerseComparisonPanel = ({
     getLocalizedBookName,
   ]);
 
-  // Enhanced scroll synchronization with verse alignment (only for comparison view)
-  const handleScrollSync = useCallback(
-    (scrollPosition, sourceId, verse) => {
-      if (!syncEnabled || !panelRef.current) return;
+  // Expose copy function globally for the main nav button to use
+  useEffect(() => {
+    if (showCopyInNav) {
+      window.copyComparisonVerses = copySelectedVerses;
+      return () => {
+        delete window.copyComparisonVerses;
+      };
+    }
+  }, [copySelectedVerses, showCopyInNav]);
 
-      // Clear any pending scroll sync
-      if (scrollSyncTimeout.current) {
-        clearTimeout(scrollSyncTimeout.current);
-      }
-
-      // Debounce scroll events for smoother performance
-      scrollSyncTimeout.current = setTimeout(() => {
-        const containers = panelRef.current.querySelectorAll(
-          ".comparison-view-container"
-        );
-
-        containers.forEach((container) => {
-          if (container.id !== sourceId) {
-            // Find matching verse position in target container
-            const targetVersePos = versePositions[container.id]?.[verse];
-            if (targetVersePos) {
-              // Calculate offset to center the verse
-              const containerHeight = container.clientHeight;
-              const scrollTo =
-                targetVersePos.top -
-                containerHeight / 2 +
-                targetVersePos.height / 2;
-              container.scrollTo({
-                top: scrollTo,
-                behavior: "smooth",
-              });
-            } else {
-              // Fallback to simple scroll position sync
-              container.scrollTop = scrollPosition;
-            }
-          }
-        });
-      }, 50);
-    },
-    [syncEnabled, versePositions]
-  );
+  // Scroll sync is now handled by the parent container, no per-panel sync needed
+  const handleScrollSync = useCallback(() => {
+    // No-op since individual containers don't scroll
+  }, []);
 
   // Fetch verses when book, chapter, or translations change
   useEffect(() => {
@@ -597,55 +564,13 @@ const VerseComparisonPanel = ({
     };
   }, []);
 
+  // Mobile horizontal scroll snapping: center panels after scroll ends
+  // Mobile scroll behavior is now handled by CSS scroll-snap
   return (
     <div className="verse-comparison-panel" ref={panelRef}>
       <div className="panel-header">
         <h3>Verse Comparison</h3>
         <div className="header-controls">
-          {(() => {
-            const hasSelections = syncEnabled
-              ? selectedVerses.size > 0
-              : Object.values(independentSelections).some(
-                  (set) => set && set.size > 0
-                );
-
-            const totalSelections = syncEnabled
-              ? selectedVerses.size
-              : Object.values(independentSelections).reduce(
-                  (total, set) => total + (set?.size || 0),
-                  0
-                );
-
-            return (
-              hasSelections && (
-                <button
-                  onClick={copySelectedVerses}
-                  className={`copy-button ${copyState}`}
-                  disabled={copyState === "copying"}
-                  title={`Copy ${totalSelections} selected verse${
-                    totalSelections > 1 ? "s" : ""
-                  }`}
-                >
-                  {copyState === "copying" && (
-                    <>
-                      ⏳ <span className="copy-text">Copying...</span>
-                    </>
-                  )}
-                  {copyState === "copied" && (
-                    <>
-                      ✅ <span className="copy-text">Copied</span>
-                    </>
-                  )}
-                  {copyState === "idle" && (
-                    <>
-                      📋 <span className="copy-text">Copy</span>
-                      <span className="copy-count">{totalSelections}</span>
-                    </>
-                  )}
-                </button>
-              )
-            );
-          })()}
           <SyncControls
             translations={translations}
             onAddTranslation={handleAddTranslation}
@@ -658,37 +583,55 @@ const VerseComparisonPanel = ({
 
       {error && <div className="error-message">Error: {error}</div>}
 
-      <div className="comparison-views-container">
-        {translations.map((translation) => (
-          <ComparisonView
-            key={translation}
-            id={`view-${translation}`}
-            translation={translation}
-            book={selectedBook}
-            chapter={selectedChapter}
-            bibleStructure={bibleStructure}
-            highlightedVerse={highlightedVerse}
-            onScroll={handleScrollSync}
-            loading={isLoading}
-            onVersePositionUpdate={updateVersePosition}
-            alignedVerses={alignedVerses}
-            useAlignedData={true}
-            selectedVerses={
-              syncEnabled
-                ? selectedVerses
-                : independentSelections[translation] || new Set()
-            }
-            onVerseSelect={
-              syncEnabled
-                ? handleVerseSelect
-                : (verseNumber) =>
-                    handleIndependentVerseSelect(translation, verseNumber)
-            }
-            syncEnabled={syncEnabled}
-          />
-        ))}
-      </div>
+      {isLoading && alignedVerses.length === 0 && (
+        <div className="loading-container">
+          <div className="loading-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
+            </svg>
+          </div>
+          <div className="loading-text">Setting up verse comparison...</div>
+          <div className="loading-dots">
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+            <div className="loading-dot"></div>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && (
+        <div className="comparison-views-container comparison-scroll-container">
+          {translations.map((translation) => (
+            <ComparisonView
+              key={translation}
+              id={`view-${translation}`}
+              translation={translation}
+              book={selectedBook}
+              chapter={selectedChapter}
+              bibleStructure={bibleStructure}
+              highlightedVerse={highlightedVerse}
+              onScroll={handleScrollSync}
+              loading={isLoading}
+              alignedVerses={alignedVerses}
+              useAlignedData={true}
+              selectedVerses={
+                syncEnabled
+                  ? selectedVerses
+                  : independentSelections[translation] || new Set()
+              }
+              onVerseSelect={
+                syncEnabled
+                  ? handleVerseSelect
+                  : (verseNumber) =>
+                      handleIndependentVerseSelect(translation, verseNumber)
+              }
+              syncEnabled={syncEnabled}
+            />
+          ))}
+        </div>
+      )}
     </div>
+    // Mobile snapping scroll: ensure active panel is centered after scroll ends
   );
 };
 

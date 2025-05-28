@@ -13,6 +13,20 @@ function App() {
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [viewMode, setViewMode] = useState("reader"); // 'reader' or 'comparison'
   const [selectedTranslation, setSelectedTranslation] = useState("TB");
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check for saved preference or default to light mode
+    const saved = localStorage.getItem("darkMode");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Apply dark mode class to document
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-theme",
+      isDarkMode ? "dark" : "light"
+    );
+    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
 
   // Track view changes for analytics
   useEffect(() => {
@@ -31,6 +45,12 @@ function App() {
   const [bibleStructure, setBibleStructure] = useState(null);
   const [highlightedVerse, setHighlightedVerse] = useState(null);
   const [selectedVerses, setSelectedVerses] = useState(new Set());
+  const [comparisonSelectedVerses, setComparisonSelectedVerses] = useState(
+    new Set()
+  );
+  const [comparisonIndependentSelections, setComparisonIndependentSelections] =
+    useState({});
+  const [comparisonSyncEnabled, setComparisonSyncEnabled] = useState(true);
   const [copyState, setCopyState] = useState("idle");
   const [showMobileMenu, setShowMobileMenu] = useState(true);
   const mobileMenuRef = useRef(null);
@@ -55,6 +75,8 @@ function App() {
   // Clear selections when switching between views
   useEffect(() => {
     setSelectedVerses(new Set());
+    setComparisonSelectedVerses(new Set());
+    setComparisonIndependentSelections({});
     setCopyState("idle");
   }, [viewMode]);
 
@@ -311,59 +333,89 @@ function App() {
 
   // Copy selected verses function
   const copySelectedVerses = async () => {
-    if (selectedVerses.size === 0) return;
+    if (viewMode === "reader") {
+      // Reader mode copy logic
+      if (selectedVerses.size === 0) return;
 
-    setCopyState("copying");
+      setCopyState("copying");
 
-    const sortedVerseNumbers = Array.from(selectedVerses).sort((a, b) => a - b);
+      const sortedVerseNumbers = Array.from(selectedVerses).sort(
+        (a, b) => a - b
+      );
 
-    // Determine verse range
-    let verseRange;
-    if (sortedVerseNumbers.length === 1) {
-      verseRange = sortedVerseNumbers[0].toString();
-    } else {
-      const start = sortedVerseNumbers[0];
-      const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
-      verseRange = `${start}-${end}`;
+      // Determine verse range
+      let verseRange;
+      if (sortedVerseNumbers.length === 1) {
+        verseRange = sortedVerseNumbers[0].toString();
+      } else {
+        const start = sortedVerseNumbers[0];
+        const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
+        verseRange = `${start}-${end}`;
+      }
+
+      // Get translation name
+      const translationName = selectedTranslation?.toUpperCase() || "KJV";
+
+      // Create header: [Book] [Chapter] [Verse Range] [Translation]
+      const header = `${selectedBook} ${selectedChapter}:${verseRange} ${translationName}`;
+
+      // Get verse content from global reference (set by ChapterReader)
+      let content = "";
+      if (
+        window.currentChapterVerses &&
+        window.currentChapterVerses.length > 0
+      ) {
+        const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+          const verse = window.currentChapterVerses.find(
+            (v) =>
+              (v.verse || window.currentChapterVerses.indexOf(v) + 1) ===
+              verseNumber
+          );
+          return verse?.text || "";
+        });
+        content = verseTexts.join(" ");
+      }
+
+      const textToCopy = content ? `${header}\n${content}` : header;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        setCopyState("copied");
+        // Send GA event for verse copy
+        sendEvent({
+          action: "copy_verses",
+          category: "engagement",
+          label: header,
+          value: sortedVerseNumbers.length,
+        });
+        setTimeout(() => setCopyState("idle"), 2000);
+      } catch (err) {
+        console.error("Failed to copy text: ", err);
+        setCopyState("idle");
+      }
+    } else if (viewMode === "comparison") {
+      // Comparison mode copy logic - will be handled by the callback from VerseComparisonPanel
+      if (window.copyComparisonVerses) {
+        setCopyState("copying");
+        try {
+          await window.copyComparisonVerses();
+          setCopyState("copied");
+          setTimeout(() => setCopyState("idle"), 2000);
+        } catch (err) {
+          console.error("Failed to copy comparison verses: ", err);
+          setCopyState("idle");
+        }
+      }
     }
+  };
 
-    // Get translation name
-    const translationName = selectedTranslation?.toUpperCase() || "KJV";
-
-    // Create header: [Book] [Chapter] [Verse Range] [Translation]
-    const header = `${selectedBook} ${selectedChapter}:${verseRange} ${translationName}`;
-
-    // Get verse content from global reference (set by ChapterReader)
-    let content = "";
-    if (window.currentChapterVerses && window.currentChapterVerses.length > 0) {
-      const verseTexts = sortedVerseNumbers.map((verseNumber) => {
-        const verse = window.currentChapterVerses.find(
-          (v) =>
-            (v.verse || window.currentChapterVerses.indexOf(v) + 1) ===
-            verseNumber
-        );
-        return verse?.text || "";
-      });
-      content = verseTexts.join(" ");
-    }
-
-    const textToCopy = content ? `${header}\n${content}` : header;
-
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setCopyState("copied");
-      // Send GA event for verse copy
-      sendEvent({
-        action: "copy_verses",
-        category: "engagement",
-        label: header,
-        value: sortedVerseNumbers.length,
-      });
-      setTimeout(() => setCopyState("idle"), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
-      setCopyState("idle");
-    }
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+    sendEvent({
+      action: "dark_mode_toggle",
+      category: "ui",
+      label: !isDarkMode ? "enabled" : "disabled",
+    });
   };
 
   return (
@@ -374,37 +426,61 @@ function App() {
           <div className="nav-top">
             <div className="nav-brand">
               {/* Copy Button positioned on the left */}
-              {selectedVerses.size > 0 && (
-                <div className="copy-section copy-left">
-                  <button
-                    onClick={copySelectedVerses}
-                    className={`copy-button ${copyState}`}
-                    disabled={copyState === "copying"}
-                    title={`Copy ${selectedVerses.size} selected verse${
-                      selectedVerses.size > 1 ? "s" : ""
-                    }`}
-                  >
-                    {copyState === "copying" && (
-                      <>
-                        ⏳ <span className="copy-text">Copying...</span>
-                      </>
-                    )}
-                    {copyState === "copied" && (
-                      <>
-                        ✅ <span className="copy-text">Copied</span>
-                      </>
-                    )}
-                    {copyState === "idle" && (
-                      <>
-                        📋 <span className="copy-text">Copy</span>
-                        <span className="copy-count">
-                          {selectedVerses.size}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+              {(() => {
+                const hasReaderSelections =
+                  viewMode === "reader" && selectedVerses.size > 0;
+                const hasComparisonSelections =
+                  viewMode === "comparison" &&
+                  (comparisonSyncEnabled
+                    ? comparisonSelectedVerses.size > 0
+                    : Object.values(comparisonIndependentSelections).some(
+                        (set) => set && set.size > 0
+                      ));
+
+                const totalSelections =
+                  viewMode === "reader"
+                    ? selectedVerses.size
+                    : comparisonSyncEnabled
+                    ? comparisonSelectedVerses.size
+                    : Object.values(comparisonIndependentSelections).reduce(
+                        (total, set) => total + (set?.size || 0),
+                        0
+                      );
+
+                return (
+                  (hasReaderSelections || hasComparisonSelections) && (
+                    <div className="copy-section copy-left">
+                      <button
+                        onClick={copySelectedVerses}
+                        className={`copy-button ${copyState}`}
+                        disabled={copyState === "copying"}
+                        title={`Copy ${totalSelections} selected verse${
+                          totalSelections > 1 ? "s" : ""
+                        }`}
+                      >
+                        {copyState === "copying" && (
+                          <>
+                            ⏳ <span className="copy-text">Copying...</span>
+                          </>
+                        )}
+                        {copyState === "copied" && (
+                          <>
+                            ✅ <span className="copy-text">Copied</span>
+                          </>
+                        )}
+                        {copyState === "idle" && (
+                          <>
+                            📋 <span className="copy-text">Copy</span>
+                            <span className="copy-count">
+                              {totalSelections}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )
+                );
+              })()}
 
               <img
                 src="/bcc_logo.png"
@@ -412,41 +488,120 @@ function App() {
                 className="app-logo"
               />
               <h1 className="app-title">BlessingsBible</h1>
-
-              {/* Mobile menu toggle */}
-              <button
-                className="mobile-menu-toggle"
-                onClick={() => {
-                  setShowMobileMenu((prev) => {
-                    sendEvent({
-                      action: "mobile_menu_toggle",
-                      category: "ui",
-                      label: !prev ? "open" : "close",
-                    });
-                    return !prev;
-                  });
-                }}
-                aria-label="Toggle mobile menu"
-                aria-expanded={showMobileMenu}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  {showMobileMenu ? (
-                    // Up arrow (^)
-                    <polyline points="18,15 12,9 6,15"></polyline>
-                  ) : (
-                    // Down arrow (V)
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                  )}
-                </svg>
-              </button>
             </div>
 
-            <div className="nav-actions"></div>
+            <div className="nav-actions">
+              {/* Mobile controls - dark mode toggle + menu toggle */}
+              <div className="nav-mobile-controls">
+                {/* Dark mode toggle - shown on mobile next to menu toggle */}
+                <button
+                  className="dark-mode-toggle"
+                  onClick={toggleDarkMode}
+                  aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                  title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                >
+                  {isDarkMode ? (
+                    // Sun icon for light mode
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="5" />
+                      <line x1="12" y1="1" x2="12" y2="3" />
+                      <line x1="12" y1="21" x2="12" y2="23" />
+                      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                      <line x1="1" y1="12" x2="3" y2="12" />
+                      <line x1="21" y1="12" x2="23" y2="12" />
+                      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                  ) : (
+                    // Moon icon for dark mode
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Mobile menu toggle */}
+                <button
+                  className="mobile-menu-toggle"
+                  onClick={() => {
+                    setShowMobileMenu((prev) => {
+                      sendEvent({
+                        action: "mobile_menu_toggle",
+                        category: "ui",
+                        label: !prev ? "open" : "close",
+                      });
+                      return !prev;
+                    });
+                  }}
+                  aria-label="Toggle mobile menu"
+                  aria-expanded={showMobileMenu}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    {showMobileMenu ? (
+                      // Up arrow (^)
+                      <polyline points="18,15 12,9 6,15"></polyline>
+                    ) : (
+                      // Down arrow (V)
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    )}
+                  </svg>
+                </button>
+              </div>
+
+              {/* Dark mode toggle for desktop - hidden on mobile */}
+              <button
+                className="dark-mode-toggle desktop-only"
+                onClick={toggleDarkMode}
+                aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+                title={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+              >
+                {isDarkMode ? (
+                  // Sun icon for light mode
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                  </svg>
+                ) : (
+                  // Moon icon for dark mode
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Bottom row - Controls */}
@@ -530,6 +685,13 @@ function App() {
             bibleStructure={bibleStructure}
             highlightedVerse={highlightedVerse}
             selectedTranslation={selectedTranslation}
+            selectedVerses={comparisonSelectedVerses}
+            setSelectedVerses={setComparisonSelectedVerses}
+            independentSelections={comparisonIndependentSelections}
+            setIndependentSelections={setComparisonIndependentSelections}
+            syncEnabled={comparisonSyncEnabled}
+            setSyncEnabled={setComparisonSyncEnabled}
+            showCopyInNav={true}
           />
         )}
       </main>

@@ -144,7 +144,32 @@
 
 @media (max-width: 768px) {
   .sync-controls {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  /* Hide sync text on mobile, show only icon */
+  .sync-toggle .sync-text {
+    display: none;
+  }
+
+  .sync-toggle {
+    padding: var(--spacing-xs);
+    min-width: auto;
+  }
+
+  .controls-group {
+    gap: var(--spacing-xs);
+  }
+
+  .translation-tag {
+    font-size: 13px;
+    padding: var(--spacing-xs);
+  }
+
+  .add-translation {
+    font-size: 13px;
+    padding: var(--spacing-xs);
   }
 }

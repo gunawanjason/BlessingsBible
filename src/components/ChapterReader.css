@@ -8,9 +8,9 @@
 
 /* Chapter Controls */
 .chapter-controls {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--bg-overlay);
   backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--divider-color, #e5e5ea);
+  border-bottom: 1px solid var(--divider-color);
   padding: var(--spacing-md, 16px) var(--spacing-xl, 32px);
   position: sticky;
   top: 0;
@@ -95,39 +95,38 @@
 .nav-button {
   width: 36px;
   height: 36px;
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 500;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.15s ease;
   backdrop-filter: saturate(180%) blur(20px);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
 .nav-button:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.12);
+  background: var(--primary-color);
+  color: white;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-medium);
 }
 
 .nav-button:active:not(:disabled) {
   transform: translateY(0);
-  background: rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-light);
 }
 
 .nav-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  background: rgba(0, 0, 0, 0.02);
-  border-color: rgba(0, 0, 0, 0.04);
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
   box-shadow: none;
 }
 
@@ -272,7 +271,7 @@
 }
 
 .verse-item:hover {
-  background: rgba(142, 142, 147, 0.06);
+  background: var(--bg-secondary);
 }
 
 .verse-item.highlighted {
@@ -311,8 +310,8 @@
   margin-right: var(--spacing-sm, 8px);
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary, #86868b);
-  background: rgba(142, 142, 147, 0.12);
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
   border-radius: 4px;
   margin-top: 1px;
   flex-shrink: 0;

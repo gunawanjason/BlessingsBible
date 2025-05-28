@@ -77,7 +77,7 @@ const SyncControls = ({
               </g>
             )}
           </svg>
-          <span>
+          <span className="sync-text">
             {syncEnabled ? "Selection Sync On" : "Selection Sync Off"}
           </span>
         </button>
