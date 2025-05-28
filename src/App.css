@@ -7,6 +7,22 @@
   --success-color: #34c759;
   --error-color: #ff3b30;
 
+  --radius: 12px;
+  --radius-large: 16px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Navigation Height Variables */
+  --nav-height: 80px; /* Desktop default */
+}
+
+/* Light mode variables */
+:root[data-theme="light"] {
   --bg-primary: #ffffff;
   --bg-secondary: #f2f2f7;
   --bg-tertiary: #ffffff;
@@ -22,19 +38,25 @@
   --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
   --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
 
-  --radius: 12px;
-  --radius-large: 16px;
+/* Dark mode variables */
+:root[data-theme="dark"] {
+  --bg-primary: #1c1c1e;
+  --bg-secondary: #2c2c2e;
+  --bg-tertiary: #1c1c1e;
+  --bg-overlay: rgba(28, 28, 30, 0.8);
 
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
+  --text-primary: #ffffff;
+  --text-secondary: #98989d;
+  --text-tertiary: #636366;
 
-  /* Navigation Height Variables */
-  --nav-height: 80px; /* Desktop default */
+  --border-color: #38383a;
+  --divider-color: #38383a;
+
+  --shadow-light: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -142,7 +164,66 @@ body {
   gap: var(--spacing-sm);
 }
 
-/* Copy button in navbar */
+/* Copy button in navbar - matches ChapterReader styles */
+.copy-section {
+  display: flex;
+  justify-content: center;
+  min-height: 36px; /* Reserve space for copy button */
+  align-items: center;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  background: var(--primary-color, #007aff);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.copy-button:hover:not(:disabled) {
+  background: var(--primary-hover, #0056d6);
+  transform: translateY(-1px);
+}
+
+.copy-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.copy-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.copy-button.copied {
+  background: var(--success-color, #34c759);
+}
+
+.copy-button.copying {
+  background: var(--secondary-color, #8e8e93);
+}
+
+.copy-text {
+  font-weight: 500;
+}
+
+.copy-count {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: var(--spacing-xs, 4px);
+}
+
+/* Legacy nav copy button styles for backward compatibility */
 .nav-copy-section {
   display: flex;
   align-items: center;
@@ -218,8 +299,8 @@ body {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
-  width: 44px;
-  height: 44px;
+  width: 32px; /* Reduced from 38px */
+  height: 32px; /* Reduced from 38px */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -251,6 +332,121 @@ body {
   color: var(--text-tertiary);
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Mobile Controls Container */
+.nav-mobile-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.dark-mode-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dark-mode-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.dark-mode-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+/* Mobile Menu Toggle - Match Dark Mode Toggle Responsive Behavior */
+.nav-mobile-controls .mobile-menu-toggle,
+.mobile-menu-toggle {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 38px; /* Same as dark mode toggle */
+  height: 38px; /* Same as dark mode toggle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-light);
+}
+
+.nav-mobile-controls .mobile-menu-toggle svg,
+.mobile-menu-toggle svg {
+  width: 18px; /* Same as dark mode toggle */
+  height: 18px; /* Same as dark mode toggle */
+}
+
+.nav-mobile-controls .mobile-menu-toggle:hover,
+.mobile-menu-toggle:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-medium);
+}
+
+.nav-mobile-controls .mobile-menu-toggle:active,
+.mobile-menu-toggle:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+.nav-mobile-controls .mobile-menu-toggle:hover,
+.mobile-menu-toggle:hover {
+  background: var(--primary-color) !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-medium) !important;
+}
+
+.nav-mobile-controls .mobile-menu-toggle:active,
+.mobile-menu-toggle:active {
+  transform: translateY(0) !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+/* Desktop/Mobile visibility */
+.desktop-only {
+  display: flex;
+}
+
+/* Hide mobile controls on desktop */
+.nav-mobile-controls {
+  display: none;
+}
+
+@media (max-width: 1040px) {
+  .desktop-only {
+    display: none;
+  }
+
+  .nav-mobile-controls {
+    display: flex;
+  }
+
+  .nav-mobile-controls .dark-mode-toggle {
+    display: flex;
+  }
 }
 
 /* Bottom row - Controls */
@@ -358,12 +554,12 @@ body {
 /* Responsive Design */
 @media (max-width: 1040px) {
   :root {
-    --nav-height: 120px; /* Optimized for new layout */
+    --nav-height: 110px; /* Further reduced from 120px */
   }
 
   .nav-content {
-    padding: var(--spacing-sm) var(--spacing-md);
-    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm); /* Reduced padding */
+    gap: var(--spacing-xs); /* Reduced gap */
     align-items: center;
   }
 
@@ -380,11 +576,11 @@ body {
   }
 
   .app-logo {
-    height: 28px;
+    height: 24px; /* Reduced from 28px */
   }
 
   .app-title {
-    font-size: 24px;
+    font-size: 20px; /* Reduced from 24px */
     text-align: center;
   }
 
@@ -399,7 +595,7 @@ body {
 
   .nav-controls {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs); /* Reduced gap between controls */
     align-items: center;
     width: 100%;
   }
@@ -414,7 +610,9 @@ body {
   .nav-secondary-controls {
     width: 100%;
     justify-content: center;
-    gap: var(--spacing-sm);
+    gap: var(
+      --spacing-xs
+    ); /* Reduced gap between search and translation switcher */
   }
 
   .nav-secondary-controls .search-bar {
@@ -464,36 +662,16 @@ select,
   background: var(--text-secondary);
 }
 
-/* Mobile menu toggle button */
+/* Mobile menu toggle button - Inherit from base styles above */
 .mobile-menu-toggle {
   display: none;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius);
-  width: 48px;
-  height: 48px;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: var(--shadow-light);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
 
 .mobile-menu-toggle svg {
-  width: 24px;
-  height: 24px;
   pointer-events: none;
-}
-
-.mobile-menu-toggle:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
 }
 
 .mobile-menu-toggle:active {
@@ -503,10 +681,9 @@ select,
 
 /* Improved mobile touch responsiveness */
 @media (max-width: 1040px) {
+  .nav-mobile-controls .mobile-menu-toggle,
   .mobile-menu-toggle {
-    min-width: 48px;
-    min-height: 48px;
-    padding: 0;
+    display: flex; /* Enable on mobile */
   }
 
   .mobile-menu-toggle:focus-visible {
@@ -523,7 +700,6 @@ select,
 /* Tablet view - stretch search bar and center all controls */
 @media (max-width: 1040px) and (min-width: 768px) {
   .mobile-menu-toggle {
-    display: flex;
     z-index: 10;
   }
 
@@ -582,7 +758,6 @@ select,
 /* Mobile view - below 768px */
 @media (max-width: 768px) {
   .mobile-menu-toggle {
-    display: flex;
     z-index: 10;
   }
 
@@ -625,11 +800,25 @@ select,
 @media (max-width: 1040px) {
   /* Ensure minimum touch targets */
   button,
-  .nav-button,
   .copy-button,
   [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 25px;
+    min-width: 25px;
+  }
+
+  /* Make nav buttons smaller on mobile */
+  .nav-button {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    min-height: 28px !important;
+  }
+
+  /* Copy button mobile styles */
+  .copy-button {
+    font-size: 12px; /* Reduced from 13px */
+    padding: 6px 10px; /* Reduced from 8px 12px */
+    border-radius: 14px; /* Reduced from 16px */
   }
 
   /* Prevent horizontal scrolling */
@@ -687,6 +876,65 @@ select,
   [role="button"]:focus-visible {
     outline: 3px solid var(--primary-color);
     outline-offset: 2px;
+  }
+}
+
+/* Small mobile specific styles */
+@media (max-width: 480px) {
+  :root {
+    --nav-height: 100px; /* Even more compact for small screens */
+  }
+
+  .nav-content {
+    padding: 4px 8px; /* Minimal padding for small screens */
+    gap: 4px; /* Minimal gap */
+  }
+
+  .app-logo {
+    height: 18px; /* Even smaller for very small screens */
+  }
+
+  .app-title {
+    font-size: 16px; /* Further reduced for small screens */
+  }
+
+  .copy-button {
+    font-size: 10px; /* Further reduced */
+    padding: 3px 6px; /* Further reduced */
+    border-radius: 10px; /* Further reduced */
+    min-height: 22px; /* Further reduced */
+  }
+
+  .nav-secondary-controls {
+    gap: 4px; /* Minimal gap between components */
+  }
+
+  /* Ensure buttons don't get too small to be usable */
+  .dark-mode-toggle,
+  .mobile-menu-toggle {
+    width: 32px !important; /* Reduced from 36px */
+    height: 32px !important; /* Reduced from 36px */
+    min-width: 32px !important; /* Reduced from 36px */
+    min-height: 32px !important; /* Reduced from 36px */
+  }
+
+  .dark-mode-toggle svg,
+  .mobile-menu-toggle svg {
+    width: 14px !important; /* Reduced from 16px */
+    height: 14px !important; /* Reduced from 16px */
+  }
+
+  /* Make nav buttons even smaller on small screens */
+  .nav-button {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
+
+  .nav-button svg {
+    width: 16px !important;
+    height: 16px !important;
   }
 }
 

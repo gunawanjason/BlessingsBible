@@ -66,83 +66,17 @@ const ComparisonView = ({
     }
   }, [book, chapter, translation, useAlignedData, alignedVerses]);
 
-  // Update verse positions when verses change
+  // Update verse positions (simplified)
   useEffect(() => {
+    // Basic position tracking for compatibility
     if (verses.length > 0 && onVersePositionUpdate) {
-      const updatePositions = () => {
-        verses.forEach((verse) => {
-          const verseElement = verseRefs.current[verse.verse];
-          if (verseElement) {
-            const rect = verseElement.getBoundingClientRect();
-            const containerRect = containerRef.current.getBoundingClientRect();
-            onVersePositionUpdate(id, verse.verse, {
-              top:
-                rect.top - containerRect.top + containerRef.current.scrollTop,
-              height: rect.height,
-            });
-          }
-        });
-      };
-
-      // Initial position update
-      updatePositions();
-
-      // Update positions on resize
-      const resizeObserver = new ResizeObserver(updatePositions);
-      if (containerRef.current) {
-        resizeObserver.observe(containerRef.current);
-      }
-
-      return () => {
-        resizeObserver.disconnect();
-      };
+      verses.forEach((verse) => {
+        onVersePositionUpdate(id, verse.verse, { top: 0, height: 0 });
+      });
     }
   }, [verses, id, onVersePositionUpdate]);
 
-  // Handle scroll events and notify parent
-  const handleScroll = useCallback(() => {
-    if (containerRef.current && onScroll) {
-      // Find the verse currently at the center of the view
-      const container = containerRef.current;
-      const containerHeight = container.clientHeight;
-      const scrollCenter = container.scrollTop + containerHeight / 2;
-
-      // Find the verse closest to the center
-      let closestVerse = null;
-      let minDistance = Infinity;
-
-      verses.forEach((verse) => {
-        const verseElement = verseRefs.current[verse.verse];
-        if (verseElement) {
-          const rect = verseElement.getBoundingClientRect();
-          const verseCenter =
-            rect.top -
-            container.getBoundingClientRect().top +
-            container.scrollTop +
-            rect.height / 2;
-          const distance = Math.abs(verseCenter - scrollCenter);
-
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestVerse = verse.verse;
-          }
-        }
-      });
-
-      onScroll(container.scrollTop, id, closestVerse);
-    }
-  }, [onScroll, id, verses]);
-
-  // Set up scroll listener
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    container.addEventListener("scroll", handleScroll);
-    return () => {
-      container.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleScroll]);
+  // Scroll handling removed since individual containers don't scroll anymore
 
   // Handle verse click for selection
   const handleVerseClick = useCallback(

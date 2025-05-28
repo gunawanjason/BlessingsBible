@@ -7,21 +7,21 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  background: rgba(142, 142, 147, 0.12);
+  background: var(--bg-secondary);
   border: none;
   border-radius: var(--radius, 12px);
-  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  font-size: 16px;
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px); /* Reduced padding */
+  font-size: 14px; /* Reduced from 16px */
   font-weight: 500;
   color: var(--text-primary, #1d1d1f);
   cursor: pointer;
   outline: none;
-  min-width: 120px;
+  min-width: 100px; /* Reduced from 120px */
   height: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: var(--shadow-light);
-  min-height: 48px;
+  min-height: 40px; /* Reduced from 48px */
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
     "Helvetica Neue", Helvetica, Arial, sans-serif;
   letter-spacing: -0.022em;
@@ -47,7 +47,7 @@
 .translation-button:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
-  background: rgba(142, 142, 147, 0.2);
+  background: var(--bg-primary);
 }
 
 .translation-button:hover::before {
@@ -55,9 +55,22 @@
 }
 
 .translation-button.active {
-  background: rgba(142, 142, 147, 0.3);
+  background: var(--primary-color);
+  color: white;
   transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
+}
+
+.translation-button.active .translation-name {
+  color: white;
+}
+
+.translation-button.active .translation-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.translation-button.active .chevron-icon {
+  color: white;
 }
 
 .translation-button.active::before {
@@ -77,7 +90,7 @@
 }
 
 .translation-name {
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
   font-weight: 600;
   color: var(--text-primary, #1d1d1f);
   transition: color 0.3s ease;
@@ -89,7 +102,7 @@
 }
 
 .translation-label {
-  font-size: 11px;
+  font-size: 10px; /* Reduced from 11px */
   font-weight: 500;
   color: var(--text-secondary, #86868b);
   text-transform: uppercase;
@@ -98,19 +111,27 @@
 }
 
 .translation-button:hover .translation-name {
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color);
 }
 
 .translation-button:hover .translation-label {
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color);
+}
+
+.translation-button.active:hover .translation-name {
+  color: white;
+}
+
+.translation-button.active:hover .translation-label {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .translation-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px; /* Reduced from 24px */
+  height: 20px; /* Reduced from 24px */
   border-radius: 50%;
   background: rgba(0, 122, 255, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -126,8 +147,8 @@
 }
 
 .chevron-icon {
-  width: 12px;
-  height: 12px;
+  width: 10px; /* Reduced from 12px */
+  height: 10px; /* Reduced from 12px */
   color: var(--primary-color, #007aff);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   stroke-width: 2.5;
@@ -153,8 +174,8 @@
   right: 0;
   left: auto;
   width: 280px;
-  background: white;
-  border: 1px solid var(--divider-color, #e5e5ea);
+  background: var(--bg-overlay);
+  border: 1px solid var(--divider-color);
   border-radius: var(--radius-large, 16px);
   box-shadow: var(--shadow-heavy);
   max-height: min(80vh, calc(100vh - 200px));
@@ -265,8 +286,8 @@
   justify-content: space-between;
   padding: var(--spacing-lg, 24px) var(--spacing-lg, 24px)
     var(--spacing-md, 16px);
-  border-bottom: 1px solid var(--divider-color, #e5e5ea);
-  background: white;
+  border-bottom: 1px solid var(--divider-color);
+  background: var(--bg-secondary);
 }
 
 .dropdown-header h3 {
@@ -285,7 +306,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: rgba(142, 142, 147, 0.12);
+  background: var(--bg-primary);
   border: none;
   border-radius: 50%;
   cursor: pointer;
@@ -293,7 +314,8 @@
 }
 
 .close-button:hover {
-  background: rgba(142, 142, 147, 0.2);
+  background: var(--primary-color);
+  color: white;
   transform: scale(1.05);
 }
 
@@ -316,9 +338,62 @@
 
 /* Mobile adjustments for translations list */
 @media (max-width: 768px) {
+  .translation-button {
+    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px); /* Further reduced padding */
+    min-height: 36px; /* Reduced from 40px */
+    min-width: 90px; /* Reduced from 100px */
+    font-size: 13px; /* Further reduced */
+  }
+
+  .translation-name {
+    font-size: 13px; /* Further reduced */
+  }
+
+  .translation-label {
+    font-size: 9px; /* Further reduced */
+  }
+
+  .translation-indicator {
+    width: 18px; /* Further reduced */
+    height: 18px; /* Further reduced */
+  }
+
+  .chevron-icon {
+    width: 9px; /* Further reduced */
+    height: 9px; /* Further reduced */
+  }
+
   .translations-list {
     max-height: calc(min(50vh, calc(100vh - 180px)) - 80px);
     padding: var(--spacing-md, 16px);
+  }
+}
+
+/* Very small mobile screens - maximum compactness */
+@media (max-width: 480px) {
+  .translation-button {
+    padding: 2px 6px; /* Minimal padding for smallest screens */
+    min-height: 32px; /* Further reduced height */
+    min-width: 80px; /* Further reduced width */
+    font-size: 12px; /* Smaller font */
+  }
+
+  .translation-name {
+    font-size: 12px; /* Compact name text */
+  }
+
+  .translation-label {
+    font-size: 8px; /* Very small label text */
+  }
+
+  .translation-indicator {
+    width: 16px; /* Smaller indicator */
+    height: 16px;
+  }
+
+  .chevron-icon {
+    width: 8px; /* Smaller chevron */
+    height: 8px;
   }
 }
 
@@ -372,7 +447,7 @@
 }
 
 .category-header:hover {
-  background: rgba(142, 142, 147, 0.08);
+  background: var(--bg-secondary);
 }
 
 .category-info {
@@ -395,7 +470,7 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--text-tertiary, #a1a1a6);
-  background: rgba(142, 142, 147, 0.12);
+  background: var(--bg-secondary);
   padding: 2px 8px;
   border-radius: 12px;
   min-width: 24px;
@@ -445,7 +520,7 @@
   display: flex;
   align-items: flex-start;
   padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  background: white;
+  background: var(--bg-primary);
   border: 1px solid transparent;
   border-radius: var(--radius, 12px);
   cursor: pointer;
@@ -476,8 +551,8 @@
 }
 
 .translation-item:hover {
-  background: rgba(0, 122, 255, 0.05);
-  border-color: rgba(0, 122, 255, 0.2);
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-light);
 }
@@ -487,7 +562,7 @@
 }
 
 .translation-item.active {
-  background: var(--primary-color, #007aff);
+  background: var(--primary-color);
   color: white;
   font-weight: 600;
   transform: translateY(-1px);

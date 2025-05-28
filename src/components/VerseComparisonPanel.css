@@ -107,8 +107,9 @@
   display: flex;
   flex: 1;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto; /* Enable vertical scrolling on parent container */
   position: relative;
+  scroll-behavior: smooth;
 }
 
 .loading-indicator {
@@ -132,9 +133,84 @@
   margin: var(--spacing-md);
 }
 
+/* Loading Animation - reuse styles from ChapterReader */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: var(--spacing-md, 16px);
+}
+
+.loading-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--primary-color, #007aff);
+  animation: float 2s ease-in-out infinite;
+}
+
+.loading-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary, #86868b);
+  margin: 0;
+  opacity: 0.8;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.loading-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color, #007aff);
+  border-radius: 50%;
+  animation: pulse 1.4s infinite ease-in-out;
+}
+
+.loading-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dot:nth-child(3) {
+  animation-delay: 0;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 768px) {
   .comparison-views-container {
     flex-direction: column;
+    overflow-y: auto; /* Enable scrolling on mobile */
   }
 
   .panel-header {
@@ -151,5 +227,19 @@
   .copy-button {
     font-size: 13px;
     padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .loading-container {
+    height: 180px;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .loading-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .loading-text {
+    font-size: 15px;
   }
 }
