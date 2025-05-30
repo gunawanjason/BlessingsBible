@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./VerseComparisonPanel.css";
 import ComparisonView from "./ComparisonView";
 import SyncControls from "./SyncControls";
+import ScrollToTop from "./ScrollToTop";
 import { fetchMultipleVerses } from "../services/bibleApi";
 import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
 
@@ -344,6 +345,45 @@ const VerseComparisonPanel = ({
     setIndependentSelections,
   ]);
 
+  // Helper function to format verse ranges (groups consecutive verses)
+  const formatVerseRange = useCallback((sortedVerseNumbers) => {
+    if (sortedVerseNumbers.length === 1) {
+      return sortedVerseNumbers[0].toString();
+    } else {
+      const ranges = [];
+      let rangeStart = sortedVerseNumbers[0];
+      let rangeEnd = sortedVerseNumbers[0];
+
+      for (let i = 1; i < sortedVerseNumbers.length; i++) {
+        const currentVerse = sortedVerseNumbers[i];
+        const previousVerse = sortedVerseNumbers[i - 1];
+
+        if (currentVerse === previousVerse + 1) {
+          // Consecutive verse, extend the current range
+          rangeEnd = currentVerse;
+        } else {
+          // Non-consecutive verse, finish current range and start new one
+          if (rangeStart === rangeEnd) {
+            ranges.push(rangeStart.toString());
+          } else {
+            ranges.push(`${rangeStart}-${rangeEnd}`);
+          }
+          rangeStart = currentVerse;
+          rangeEnd = currentVerse;
+        }
+      }
+
+      // Add the final range
+      if (rangeStart === rangeEnd) {
+        ranges.push(rangeStart.toString());
+      } else {
+        ranges.push(`${rangeStart}-${rangeEnd}`);
+      }
+
+      return ranges.join(", ");
+    }
+  }, []);
+
   // Copy selected verses from comparison view
   const copySelectedVerses = useCallback(async () => {
     const hasSelections = syncEnabled
@@ -359,24 +399,18 @@ const VerseComparisonPanel = ({
           (a, b) => a - b
         );
 
-        let verseRange;
-        if (sortedVerseNumbers.length === 1) {
-          verseRange = sortedVerseNumbers[0].toString();
-        } else {
-          const start = sortedVerseNumbers[0];
-          const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
-          verseRange = `${start}-${end}`;
-        }
+        const verseRange = formatVerseRange(sortedVerseNumbers);
 
         const translationContents = translations.map((translation) => {
           const verseTexts = sortedVerseNumbers.map((verseNumber) => {
             const verseData = alignedVerses.find(
               (v) => v.verse === verseNumber
             );
-            return verseData?.[translation] || "";
+            const verseText = verseData?.[translation] || "";
+            return verseText ? `${verseNumber} ${verseText}` : "";
           });
 
-          const content = verseTexts.filter((text) => text).join(" ");
+          const content = verseTexts.filter((text) => text).join("\n");
           const localizedBook = getLocalizedBookName(selectedBook, translation);
           const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
           return content ? `${header}\n${content}` : header;
@@ -396,23 +430,17 @@ const VerseComparisonPanel = ({
               (a, b) => a - b
             );
 
-            let verseRange;
-            if (sortedVerseNumbers.length === 1) {
-              verseRange = sortedVerseNumbers[0].toString();
-            } else {
-              const start = sortedVerseNumbers[0];
-              const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
-              verseRange = `${start}-${end}`;
-            }
+            const verseRange = formatVerseRange(sortedVerseNumbers);
 
             const verseTexts = sortedVerseNumbers.map((verseNumber) => {
               const verseData = alignedVerses.find(
                 (v) => v.verse === verseNumber
               );
-              return verseData?.[translation] || "";
+              const verseText = verseData?.[translation] || "";
+              return verseText ? `${verseNumber} ${verseText}` : "";
             });
 
-            const content = verseTexts.filter((text) => text).join(" ");
+            const content = verseTexts.filter((text) => text).join("\n");
             const localizedBook = getLocalizedBookName(
               selectedBook,
               translation
@@ -438,6 +466,7 @@ const VerseComparisonPanel = ({
     translations,
     alignedVerses,
     getLocalizedBookName,
+    formatVerseRange,
   ]);
 
   // Expose copy function globally for the main nav button to use
@@ -630,6 +659,7 @@ const VerseComparisonPanel = ({
           ))}
         </div>
       )}
+      <ScrollToTop />
     </div>
     // Mobile snapping scroll: ensure active panel is centered after scroll ends
   );

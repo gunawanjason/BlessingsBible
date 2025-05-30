@@ -1,0 +1,72 @@
+.scroll-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-medium);
+  transition: all 0.3s ease;
+  opacity: 0.9;
+}
+
+.scroll-to-top:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-heavy);
+  opacity: 1;
+  background: var(--primary-hover);
+}
+
+.scroll-to-top:active {
+  transform: translateY(0);
+}
+
+.scroll-to-top-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke-width: 2.5;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .scroll-to-top-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/* Ensure it appears above other elements */
+.scroll-to-top {
+  z-index: 1001;
+}
+
+/* Animation for appearance */
+@keyframes scrollToTopAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+.scroll-to-top {
+  animation: scrollToTopAppear 0.3s ease;
+}

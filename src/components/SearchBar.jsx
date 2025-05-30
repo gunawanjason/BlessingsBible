@@ -49,7 +49,9 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
 
       // If not found, try to find by translated name
       const englishName = getEnglishBookName(searchTerm, selectedTranslation);
-      return bibleStructure.books.find((book) => book.name === englishName);
+      return bibleStructure.books.find(
+        (book) => book.name.toLowerCase() === englishName.toLowerCase()
+      );
     },
     [bibleStructure, selectedTranslation]
   );

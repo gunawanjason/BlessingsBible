@@ -272,9 +272,10 @@ export function getEnglishBookName(translatedName, translationId) {
   const bookNames = BOOK_NAMES[language];
   if (!bookNames) return translatedName;
 
-  // Find the English key for this translated value
+  // Find the English key for this translated value (case insensitive)
+  const lowerTranslatedName = translatedName.toLowerCase();
   for (const [englishName, localName] of Object.entries(bookNames)) {
-    if (localName === translatedName) {
+    if (localName.toLowerCase() === lowerTranslatedName) {
       return englishName;
     }
   }
@@ -292,6 +293,6 @@ export function getBookNamesForSearch(translationId) {
   return Object.entries(bookNames).map(([englishName, localName]) => ({
     englishName,
     localName,
-    searchTerms: [localName.toLowerCase()],
+    searchTerms: [localName.toLowerCase(), englishName.toLowerCase()],
   }));
 }
