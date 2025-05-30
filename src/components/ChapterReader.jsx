@@ -6,6 +6,8 @@ import React, {
   useMemo,
 } from "react";
 import { fetchMultipleVerses } from "../services/bibleApi";
+import { getBookName } from "../utils/translationMappings";
+import ScrollToTop from "./ScrollToTop";
 import "./ChapterReader.css";
 
 const ChapterReader = ({
@@ -94,6 +96,14 @@ const ChapterReader = ({
     };
   }, [fetchChapterVerses]);
 
+  // Expose chapter verses to global scope for App.jsx copy function
+  useEffect(() => {
+    window.currentChapterVerses = chapterVerses;
+    return () => {
+      window.currentChapterVerses = null;
+    };
+  }, [chapterVerses]);
+
   // Optimized auto-scroll with intersection observer
   useEffect(() => {
     if (!highlightedVerse || chapterVerses.length === 0) return;
@@ -156,22 +166,29 @@ const ChapterReader = ({
       verseRange = `${start}-${end}`;
     }
 
-    // Get translation name
-    const translationName = selectedTranslation?.toUpperCase() || "KJV";
+    // Get book name in translation language
+    const localizedBookName = getBookName(selectedBook, selectedTranslation);
 
-    // Create header: [Book] [Chapter] [Verse Range] [Translation]
-    const header = `${selectedBook} ${selectedChapter}:${verseRange} ${translationName}`;
+    // Get translation code
+    const translationCode = selectedTranslation?.toUpperCase() || "KJV";
 
-    // Get verse content
-    const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+    // Create header: [Book in translation language] [Chapter]:[Verse Range] [Translation]
+    const header = `${localizedBookName} ${selectedChapter}:${verseRange} ${translationCode}`;
+
+    // Get verse content with individual verse numbers
+    const verseLines = sortedVerseNumbers.map((verseNumber) => {
       const verse = chapterVerses.find(
         (v) => (v.verse || chapterVerses.indexOf(v) + 1) === verseNumber
       );
-      return verse?.text || "";
+      const verseText = verse?.text || "";
+      console.log(`Debug: Verse ${verseNumber}, text: "${verseText}"`);
+      return `${verseNumber} ${verseText}`;
     });
 
-    const content = verseTexts.join(" ");
+    const content = verseLines.join("\n");
     const textToCopy = `${header}\n${content}`;
+
+    console.log("Debug: Final text to copy:", textToCopy);
 
     try {
       await navigator.clipboard.writeText(textToCopy);
@@ -271,6 +288,7 @@ const ChapterReader = ({
           </div>
         )}
       </main>
+      <ScrollToTop />
     </div>
   );
 };

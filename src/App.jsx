@@ -5,6 +5,7 @@ import BookSelector from "./components/BookSelector";
 import ChapterReader from "./components/ChapterReader";
 import VerseComparisonPanel from "./components/VerseComparisonPanel";
 import { fetchVerses } from "./services/bibleApi";
+import { getBookName } from "./utils/translationMappings";
 import "./App.css";
 import { sendPageView, sendEvent } from "./utils/ga";
 
@@ -343,21 +344,52 @@ function App() {
         (a, b) => a - b
       );
 
-      // Determine verse range
+      // Group consecutive verses into ranges
       let verseRange;
       if (sortedVerseNumbers.length === 1) {
         verseRange = sortedVerseNumbers[0].toString();
       } else {
-        const start = sortedVerseNumbers[0];
-        const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
-        verseRange = `${start}-${end}`;
+        const ranges = [];
+        let rangeStart = sortedVerseNumbers[0];
+        let rangeEnd = sortedVerseNumbers[0];
+
+        for (let i = 1; i < sortedVerseNumbers.length; i++) {
+          const currentVerse = sortedVerseNumbers[i];
+          const previousVerse = sortedVerseNumbers[i - 1];
+
+          if (currentVerse === previousVerse + 1) {
+            // Consecutive verse, extend the current range
+            rangeEnd = currentVerse;
+          } else {
+            // Non-consecutive verse, finish current range and start new one
+            if (rangeStart === rangeEnd) {
+              ranges.push(rangeStart.toString());
+            } else {
+              ranges.push(`${rangeStart}-${rangeEnd}`);
+            }
+            rangeStart = currentVerse;
+            rangeEnd = currentVerse;
+          }
+        }
+
+        // Add the final range
+        if (rangeStart === rangeEnd) {
+          ranges.push(rangeStart.toString());
+        } else {
+          ranges.push(`${rangeStart}-${rangeEnd}`);
+        }
+
+        verseRange = ranges.join(", ");
       }
+
+      // Get book name in translation language
+      const localizedBookName = getBookName(selectedBook, selectedTranslation);
 
       // Get translation name
       const translationName = selectedTranslation?.toUpperCase() || "KJV";
 
-      // Create header: [Book] [Chapter] [Verse Range] [Translation]
-      const header = `${selectedBook} ${selectedChapter}:${verseRange} ${translationName}`;
+      // Create header: [Book in translation language] [Chapter] [Verse Range] [Translation]
+      const header = `${localizedBookName} ${selectedChapter}:${verseRange} ${translationName}`;
 
       // Get verse content from global reference (set by ChapterReader)
       let content = "";
@@ -365,15 +397,17 @@ function App() {
         window.currentChapterVerses &&
         window.currentChapterVerses.length > 0
       ) {
-        const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+        const verseLines = sortedVerseNumbers.map((verseNumber) => {
           const verse = window.currentChapterVerses.find(
             (v) =>
               (v.verse || window.currentChapterVerses.indexOf(v) + 1) ===
               verseNumber
           );
-          return verse?.text || "";
+          return verse?.text
+            ? `${verseNumber} ${verse.text}`
+            : `${verseNumber} `;
         });
-        content = verseTexts.join(" ");
+        content = verseLines.join("\n");
       }
 
       const textToCopy = content ? `${header}\n${content}` : header;

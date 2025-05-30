@@ -119,6 +119,27 @@
   font-size: 18px;
 }
 
+/* Verse segment styles for handling multiple verses in one text */
+.verse-segment {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.verse-segment:last-child {
+  margin-bottom: 0;
+}
+
+.inline-verse-number {
+  font-weight: bold;
+  color: var(--accent-color);
+  margin-right: 0.25rem;
+  font-size: 0.9em;
+}
+
+.verse-segment-text {
+  display: inline;
+}
+
 /* Loading Animation */
 .loading-container {
   display: flex;

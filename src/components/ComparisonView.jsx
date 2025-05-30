@@ -2,6 +2,55 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./ComparisonView.css";
 import { fetchMultipleVerses } from "../services/bibleApi";
 
+// Helper function to split verse content by verse numbers and render individual verses
+const splitVerseContent = (verseText) => {
+  if (!verseText || typeof verseText !== "string") {
+    return [];
+  }
+
+  // Split by verse numbers in brackets like [1], [2], etc.
+  const segments = verseText.split(/(\[\d+\])/g);
+
+  // Filter out empty segments and process them
+  const verseSegments = [];
+  let currentVerseNumber = null;
+
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i].trim();
+
+    if (!segment) continue;
+
+    // Check if this segment is a verse number
+    const verseNumberMatch = segment.match(/^\[(\d+)\]$/);
+    if (verseNumberMatch) {
+      currentVerseNumber = verseNumberMatch[1];
+    } else if (currentVerseNumber) {
+      // This is verse content following a verse number
+      verseSegments.push({
+        verseNumber: currentVerseNumber,
+        content: segment.trim(),
+      });
+      currentVerseNumber = null;
+    } else {
+      // Content without a preceding verse number - treat as verse 1 if it's the first content
+      verseSegments.push({
+        verseNumber: verseSegments.length === 0 ? "1" : null,
+        content: segment.trim(),
+      });
+    }
+  }
+
+  // If no verse numbers were found, treat the entire text as a single verse
+  if (verseSegments.length === 0 && verseText.trim()) {
+    verseSegments.push({
+      verseNumber: "1",
+      content: verseText.trim(),
+    });
+  }
+
+  return verseSegments;
+};
+
 const ComparisonView = ({
   id,
   translation,
@@ -148,7 +197,27 @@ const ComparisonView = ({
                 {verse.isEmpty ? (
                   <span className="missing-verse">—</span>
                 ) : (
-                  verse.text
+                  (() => {
+                    const verseSegments = splitVerseContent(verse.text);
+                    if (verseSegments.length <= 1) {
+                      // Single verse or no segments, display normally
+                      return verse.text;
+                    } else {
+                      // Multiple verse segments, render each on its own line
+                      return verseSegments.map((segment, index) => (
+                        <div key={index} className="verse-segment">
+                          {segment.verseNumber && (
+                            <span className="inline-verse-number">
+                              {segment.verseNumber}
+                            </span>
+                          )}
+                          <span className="verse-segment-text">
+                            {segment.content}
+                          </span>
+                        </div>
+                      ));
+                    }
+                  })()
                 )}
               </span>
             </div>
