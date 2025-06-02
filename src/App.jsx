@@ -4,8 +4,10 @@ import TranslationSwitcher from "./components/TranslationSwitcher";
 import BookSelector from "./components/BookSelector";
 import ChapterReader from "./components/ChapterReader";
 import VerseComparisonPanel from "./components/VerseComparisonPanel";
+import ShareButton from "./components/ShareButton";
 import { fetchVerses } from "./services/bibleApi";
 import { getBookName } from "./utils/translationMappings";
+import { parseUrlParams, generateShareUrl } from "./utils/urlUtils";
 import "./App.css";
 import { sendPageView, sendEvent } from "./utils/ga";
 
@@ -150,6 +152,20 @@ function App() {
       }
     };
     loadBibleStructure();
+  }, []);
+
+  // Parse URL parameters on initial load
+  useEffect(() => {
+    const urlParams = parseUrlParams();
+    if (urlParams.book && urlParams.chapter && urlParams.translation) {
+      setSelectedBook(urlParams.book);
+      setSelectedChapter(urlParams.chapter);
+      setSelectedTranslation(urlParams.translation);
+
+      if (urlParams.verses.size > 0) {
+        setSelectedVerses(urlParams.verses);
+      }
+    }
   }, []);
 
   // Close mobile menu when clicking outside
@@ -481,6 +497,27 @@ function App() {
                         0
                       );
 
+                // Generate share URL for current selections
+                const shareUrl = (() => {
+                  const currentSelections =
+                    viewMode === "reader"
+                      ? selectedVerses
+                      : comparisonSyncEnabled
+                      ? comparisonSelectedVerses
+                      : new Set(
+                          Object.values(
+                            comparisonIndependentSelections
+                          ).flatMap((set) => Array.from(set || []))
+                        );
+
+                  return generateShareUrl(
+                    selectedBook,
+                    selectedChapter,
+                    selectedTranslation,
+                    currentSelections
+                  );
+                })();
+
                 return (
                   (hasReaderSelections || hasComparisonSelections) && (
                     <div className="copy-section copy-left">
@@ -511,6 +548,13 @@ function App() {
                           </>
                         )}
                       </button>
+                      {viewMode === "reader" && (
+                        <ShareButton
+                          url={shareUrl}
+                          disabled={totalSelections === 0}
+                          verseCount={totalSelections}
+                        />
+                      )}
                     </div>
                   )
                 );
