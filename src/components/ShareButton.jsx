@@ -7,13 +7,17 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
   const handleShare = async () => {
     try {
       // Extract verse info from URL for analytics
-      const urlParams = new URLSearchParams(url.split("?")[1]);
+      const urlParts = url.split("?");
+      const urlParams = new URLSearchParams(urlParts[1] || "");
       const book = urlParams.get("book");
       const chapter = urlParams.get("chapter");
       const verses = urlParams.get("verses");
       const translation = urlParams.get("translation");
 
-      const analyticsLabel = `${book} ${chapter}:${verses} ${translation}`;
+      const analyticsLabel =
+        book && chapter && verses && translation
+          ? `${book} ${chapter}:${verses} ${translation}`
+          : "incomplete-url";
 
       // Copy to clipboard
       await navigator.clipboard.writeText(url);
