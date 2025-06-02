@@ -170,6 +170,7 @@ body {
   justify-content: center;
   min-height: 36px; /* Reserve space for copy button */
   align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .copy-button {
@@ -215,6 +216,52 @@ body {
 }
 
 .copy-count {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: var(--spacing-xs, 4px);
+}
+
+/* Share Button - matches copy button styling */
+.share-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 4px);
+  background: var(--accent-color, #ff9500);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: 36px;
+}
+
+.share-button:hover:not(:disabled) {
+  background: #e6850e;
+  transform: translateY(-1px);
+}
+
+.share-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.share-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: var(--text-tertiary);
+}
+
+.share-text {
+  font-weight: 500;
+}
+
+.share-count {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 10px;
   padding: 2px 6px;
@@ -841,6 +888,20 @@ select,
     border-radius: 14px; /* Reduced from 16px */
   }
 
+  /* Share button mobile styles */
+  .share-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 14px;
+    min-height: 28px;
+  }
+
+  /* Hide text labels on mobile - show only emojis and counts */
+  .copy-text,
+  .share-text {
+    display: none;
+  }
+
   /* Prevent horizontal scrolling */
   body {
     overflow-x: hidden;
@@ -923,6 +984,13 @@ select,
     padding: 3px 6px; /* Further reduced */
     border-radius: 10px; /* Further reduced */
     min-height: 22px; /* Further reduced */
+  }
+
+  .share-button {
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 10px;
+    min-height: 22px;
   }
 
   .nav-secondary-controls {
