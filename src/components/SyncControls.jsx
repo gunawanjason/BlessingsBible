@@ -21,6 +21,7 @@ const SyncControls = ({
     "CNVS",
     "CUNPSS-上帝",
     "CUNPSS-神",
+    "CUV",
   ];
 
   // Filter out already selected translations

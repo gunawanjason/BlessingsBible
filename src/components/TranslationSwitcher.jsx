@@ -95,6 +95,13 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
         available: true,
         category: "Chinese",
       },
+      {
+        id: "CUV",
+        name: "CUV",
+        fullName: "Chinese Union Version (Traditional)",
+        available: true,
+        category: "Chinese",
+      },
     ],
     []
   );
