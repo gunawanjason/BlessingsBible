@@ -20,10 +20,12 @@ const VerseComparisonPanel = ({
   setSyncEnabled,
   showCopyInNav = false,
 }) => {
-  const [translations, setTranslations] = useState([
-    selectedTranslation || "KJV",
-    "NIV",
-  ]);
+  const [translations, setTranslations] = useState(() => {
+    const first = selectedTranslation || "KJV";
+    // Avoid duplicate if the first translation is NIV
+    const second = first === "NIV" ? "KJV" : "NIV";
+    return [first, second];
+  });
   const [loadingStates, setLoadingStates] = useState({});
   const [alignedVerses, setAlignedVerses] = useState([]);
   const [versesData, setVersesData] = useState({});
@@ -263,7 +265,10 @@ const VerseComparisonPanel = ({
 
   // Handle adding/removing translations
   const handleAddTranslation = useCallback((translationId) => {
-    setTranslations((prev) => [...prev, translationId]);
+    setTranslations((prev) => {
+      if (prev.includes(translationId)) return prev;
+      return [...prev, translationId];
+    });
   }, []);
 
   const handleRemoveTranslation = useCallback(
@@ -586,7 +591,20 @@ const VerseComparisonPanel = ({
       translations.length > 0 &&
       translations[0] !== selectedTranslation
     ) {
-      setTranslations((prev) => [selectedTranslation, ...prev.slice(1)]);
+      setTranslations((prev) => {
+        const newTranslations = [...prev];
+        const existingIndex = newTranslations.indexOf(selectedTranslation);
+
+        if (existingIndex > 0) {
+          // If already exists, swap it to the first position to preserve both
+          newTranslations[existingIndex] = newTranslations[0];
+          newTranslations[0] = selectedTranslation;
+        } else {
+          // Otherwise just replace the first one
+          newTranslations[0] = selectedTranslation;
+        }
+        return newTranslations;
+      });
     }
   }, [selectedTranslation, translations]);
 

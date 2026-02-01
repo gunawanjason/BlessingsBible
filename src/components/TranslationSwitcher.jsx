@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useLayoutEffect,
 } from "react";
 import { createPortal } from "react-dom";
 import "./TranslationSwitcher.css";
@@ -152,61 +153,63 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
     [translations, onTranslationChange],
   );
 
-  // Optimized dropdown toggle handler with position calculation
-  const toggleDropdown = useCallback(() => {
-    setShowDropdown((prev) => {
-      if (!prev && dropdownRef.current) {
-        // Calculate optimal position when opening dropdown
-        const rect = dropdownRef.current.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
+  // Calculate position when dropdown opens
+  useLayoutEffect(() => {
+    if (showDropdown && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setTriggerRect(rect);
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
 
-        // Estimate dropdown height (considering mobile constraints)
-        const isMobile = window.innerWidth <= 768;
-        const isVerySmall = window.innerWidth <= 480;
-        const estimatedDropdownHeight = isVerySmall
-          ? Math.min(viewportHeight * 0.35, 250)
-          : isMobile
-            ? Math.min(viewportHeight * 0.4, 300)
-            : Math.min(viewportHeight * 0.5, 400);
+      // Estimate dropdown height (considering mobile constraints)
+      const isMobile = window.innerWidth <= 768;
+      const isVerySmall = window.innerWidth <= 480;
+      const estimatedDropdownHeight = isVerySmall
+        ? Math.min(viewportHeight * 0.35, 250)
+        : isMobile
+          ? Math.min(viewportHeight * 0.4, 300)
+          : Math.min(viewportHeight * 0.5, 400);
 
-        // For very small screens, calculate position accounting for scroll
-        if (isVerySmall) {
-          const scrollY = window.scrollY || window.pageYOffset;
-          const absoluteTop = rect.top + scrollY;
+      // For very small screens, calculate position accounting for scroll
+      if (isVerySmall) {
+        const scrollY = window.scrollY || window.pageYOffset;
+        const absoluteTop = rect.top + scrollY;
 
-          // Check if dropdown should open upward
-          if (
-            spaceBelow < estimatedDropdownHeight &&
-            spaceAbove > estimatedDropdownHeight
-          ) {
-            document.documentElement.style.setProperty(
-              "--dropdown-top",
-              `${absoluteTop - 8}px`,
-            );
-            setDropdownPosition("up");
-          } else {
-            document.documentElement.style.setProperty(
-              "--dropdown-top",
-              `${absoluteTop + rect.height + 8}px`,
-            );
-            setDropdownPosition("down");
-          }
+        // Check if dropdown should open upward
+        if (
+          spaceBelow < estimatedDropdownHeight &&
+          spaceAbove > estimatedDropdownHeight
+        ) {
+          document.documentElement.style.setProperty(
+            "--dropdown-top",
+            `${absoluteTop - 8}px`,
+          );
+          setDropdownPosition("up");
         } else {
-          // Position dropdown up if not enough space below and more space above
-          if (
-            spaceBelow < estimatedDropdownHeight &&
-            spaceAbove > estimatedDropdownHeight
-          ) {
-            setDropdownPosition("up");
-          } else {
-            setDropdownPosition("down");
-          }
+          document.documentElement.style.setProperty(
+            "--dropdown-top",
+            `${absoluteTop + rect.height + 8}px`,
+          );
+          setDropdownPosition("down");
+        }
+      } else {
+        // Position dropdown up if not enough space below and more space above
+        if (
+          spaceBelow < estimatedDropdownHeight &&
+          spaceAbove > estimatedDropdownHeight
+        ) {
+          setDropdownPosition("up");
+        } else {
+          setDropdownPosition("down");
         }
       }
-      return !prev;
-    });
+    }
+  }, [showDropdown]);
+
+  // Optimized dropdown toggle handler
+  const toggleDropdown = useCallback(() => {
+    setShowDropdown((prev) => !prev);
   }, []);
 
   // Optimized close dropdown handler

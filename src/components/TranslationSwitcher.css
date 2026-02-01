@@ -172,7 +172,7 @@
 .translation-dropdown {
   position: fixed;
   top: calc(var(--trigger-bottom) + 8px);
-  right: calc(100vw - var(--trigger-right));
+  right: var(--trigger-right);
   left: auto;
   width: 280px;
   background: var(--bg-primary);
@@ -203,7 +203,6 @@
   .translation-dropdown {
     max-height: min(50vh, calc(100vh - 180px));
     width: min(300px, calc(100vw - 32px));
-    top: calc(100% + 4px);
   }
 }
 
@@ -213,9 +212,9 @@
     position: fixed;
     top: auto !important;
     bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
     max-height: 85vh; /* Increased height */
     margin: 0;
     z-index: 1001;
