@@ -3,7 +3,7 @@ import "./VerseComparisonPanel.css";
 import ComparisonView from "./ComparisonView";
 import SyncControls from "./SyncControls";
 import ScrollToTop from "./ScrollToTop";
-import { fetchMultipleVerses } from "../services/bibleApi";
+import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
 import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
 
 const VerseComparisonPanel = ({
@@ -27,6 +27,7 @@ const VerseComparisonPanel = ({
   const [loadingStates, setLoadingStates] = useState({});
   const [alignedVerses, setAlignedVerses] = useState([]);
   const [versesData, setVersesData] = useState({});
+  const [headingsData, setHeadingsData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const panelRef = useRef(null);
@@ -57,27 +58,33 @@ const VerseComparisonPanel = ({
     try {
       const chapterReference = `${selectedBook} ${selectedChapter}`;
       const allVersesData = {};
+      const allHeadingsData = {};
 
-      // Fetch verses for each translation
+      // Fetch verses and headings for each translation
       await Promise.all(
         translations.map(async (translation) => {
           try {
-            const versesData = await fetchMultipleVerses(
-              translation,
-              chapterReference
-            );
-            allVersesData[translation] = versesData.reduce((acc, verse) => {
+            const [versesResponse, headingsResponse] = await Promise.all([
+              fetchMultipleVerses(translation, chapterReference),
+              fetchHeadings(translation, selectedBook, selectedChapter),
+            ]);
+
+            allVersesData[translation] = versesResponse.reduce((acc, verse) => {
               acc[verse.verse] = verse.text;
               return acc;
             }, {});
+
+            allHeadingsData[translation] = headingsResponse;
+
             // Clear loading state for successful fetch
             setLoadingStates((prev) => ({ ...prev, [translation]: null }));
           } catch (err) {
             console.error(
               `Error fetching ${translation} for ${chapterReference}:`,
-              err
+              err,
             );
             allVersesData[translation] = {};
+            allHeadingsData[translation] = [];
             setLoadingStates((prev) => ({
               ...prev,
               [translation]: {
@@ -86,7 +93,7 @@ const VerseComparisonPanel = ({
               },
             }));
           }
-        })
+        }),
       );
 
       // Get all unique verse numbers across all translations
@@ -99,7 +106,7 @@ const VerseComparisonPanel = ({
 
       // Sort verse numbers
       const sortedVerseNumbers = Array.from(allVerseNumbers).sort(
-        (a, b) => a - b
+        (a, b) => a - b,
       );
 
       // Create aligned verses data
@@ -113,10 +120,12 @@ const VerseComparisonPanel = ({
       });
 
       setVersesData(allVersesData);
+      setHeadingsData(allHeadingsData);
       setAlignedVerses(aligned);
     } catch (err) {
       setError(err.message);
       setVersesData({});
+      setHeadingsData({});
       setAlignedVerses([]);
       // Clear all loading states on error
       setLoadingStates({});
@@ -138,7 +147,7 @@ const VerseComparisonPanel = ({
         let maxHeight = 0;
         translations.forEach((translation) => {
           const verseElement = panelRef.current.querySelector(
-            `#view-${translation}-verse-${verseData.verse}`
+            `#view-${translation}-verse-${verseData.verse}`,
           );
           if (verseElement) {
             // Force layout calculation by reading height
@@ -155,7 +164,7 @@ const VerseComparisonPanel = ({
         if (targetHeight) {
           translations.forEach((translation) => {
             const verseElement = panelRef.current.querySelector(
-              `#view-${translation}-verse-${verseData.verse}`
+              `#view-${translation}-verse-${verseData.verse}`,
             );
             if (verseElement) {
               verseElement.style.minHeight = `${targetHeight}px`;
@@ -180,7 +189,7 @@ const VerseComparisonPanel = ({
         alignedVerses.forEach((verseData) => {
           translations.forEach((translation) => {
             const verseElement = panelRef.current.querySelector(
-              `#view-${translation}-verse-${verseData.verse}`
+              `#view-${translation}-verse-${verseData.verse}`,
             );
             if (verseElement) {
               verseElement.style.minHeight = "auto";
@@ -209,7 +218,7 @@ const VerseComparisonPanel = ({
         // Step 1: Collect all verse elements for this specific verse
         translations.forEach((translation) => {
           const verseElement = panelRef.current.querySelector(
-            `#view-${translation}-verse-${verseNumber}`
+            `#view-${translation}-verse-${verseNumber}`,
           );
           if (verseElement) {
             verseElement.classList.add("height-syncing");
@@ -249,7 +258,7 @@ const VerseComparisonPanel = ({
         }, 450);
       });
     },
-    [translations]
+    [translations],
   );
 
   // Handle adding/removing translations
@@ -275,7 +284,7 @@ const VerseComparisonPanel = ({
       // Trigger debounced height sync since there's more horizontal space now
       debouncedHeightSync();
     },
-    [debouncedHeightSync]
+    [debouncedHeightSync],
   );
 
   // Toggle sync between panels
@@ -301,7 +310,7 @@ const VerseComparisonPanel = ({
         syncSingleVerseHeight(verseNumber);
       }
     },
-    [syncEnabled, syncSingleVerseHeight]
+    [syncEnabled, syncSingleVerseHeight],
   );
 
   // Handle verse selection (independent mode per translation)
@@ -314,7 +323,7 @@ const VerseComparisonPanel = ({
             newSelections[translationId] = new Set();
           } else {
             newSelections[translationId] = new Set(
-              newSelections[translationId]
+              newSelections[translationId],
             );
           }
 
@@ -331,7 +340,7 @@ const VerseComparisonPanel = ({
         syncSingleVerseHeight(verseNumber);
       }
     },
-    [syncEnabled, syncSingleVerseHeight]
+    [syncEnabled, syncSingleVerseHeight],
   );
 
   // Clear selections when chapter changes
@@ -396,7 +405,7 @@ const VerseComparisonPanel = ({
       if (syncEnabled) {
         // Synced mode: copy all selected verses from all translations
         const sortedVerseNumbers = Array.from(selectedVerses).sort(
-          (a, b) => a - b
+          (a, b) => a - b,
         );
 
         const verseRange = formatVerseRange(sortedVerseNumbers);
@@ -404,7 +413,7 @@ const VerseComparisonPanel = ({
         const translationContents = translations.map((translation) => {
           const verseTexts = sortedVerseNumbers.map((verseNumber) => {
             const verseData = alignedVerses.find(
-              (v) => v.verse === verseNumber
+              (v) => v.verse === verseNumber,
             );
             const verseText = verseData?.[translation] || "";
             return verseText ? `${verseNumber} ${verseText}` : "";
@@ -427,14 +436,14 @@ const VerseComparisonPanel = ({
               return null;
 
             const sortedVerseNumbers = Array.from(translationSelections).sort(
-              (a, b) => a - b
+              (a, b) => a - b,
             );
 
             const verseRange = formatVerseRange(sortedVerseNumbers);
 
             const verseTexts = sortedVerseNumbers.map((verseNumber) => {
               const verseData = alignedVerses.find(
-                (v) => v.verse === verseNumber
+                (v) => v.verse === verseNumber,
               );
               const verseText = verseData?.[translation] || "";
               return verseText ? `${verseNumber} ${verseText}` : "";
@@ -443,7 +452,7 @@ const VerseComparisonPanel = ({
             const content = verseTexts.filter((text) => text).join("\n");
             const localizedBook = getLocalizedBookName(
               selectedBook,
-              translation
+              translation,
             );
             const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
             return content ? `${header}\n${content}` : header;
@@ -540,7 +549,7 @@ const VerseComparisonPanel = ({
         alignedVerses.forEach((verseData) => {
           translations.forEach((translation) => {
             const verseElement = panelRef.current.querySelector(
-              `#view-${translation}-verse-${verseData.verse}`
+              `#view-${translation}-verse-${verseData.verse}`,
             );
             if (verseElement) {
               verseElement.style.minHeight = "auto";
@@ -642,6 +651,7 @@ const VerseComparisonPanel = ({
               onScroll={handleScrollSync}
               loading={isLoading}
               alignedVerses={alignedVerses}
+              headings={headingsData[translation]}
               useAlignedData={true}
               selectedVerses={
                 syncEnabled

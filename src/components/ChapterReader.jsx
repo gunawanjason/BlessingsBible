@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { fetchMultipleVerses } from "../services/bibleApi";
+import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
 import { getBookName } from "../utils/translationMappings";
 import ScrollToTop from "./ScrollToTop";
 import "./ChapterReader.css";
@@ -20,6 +20,7 @@ const ChapterReader = ({
   setSelectedVerses,
 }) => {
   const [chapterVerses, setChapterVerses] = useState([]);
+  const [headings, setHeadings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copyState, setCopyState] = useState("idle"); // 'idle', 'copying', 'copied'
@@ -29,7 +30,7 @@ const ChapterReader = ({
   // Memoize current book calculation
   const currentBook = useMemo(
     () => bibleStructure?.books.find((book) => book.name === selectedBook),
-    [bibleStructure, selectedBook]
+    [bibleStructure, selectedBook],
   );
 
   const totalChapters = currentBook?.chapters || 0;
@@ -53,10 +54,10 @@ const ChapterReader = ({
       // Use our new API service to fetch the entire chapter
       const chapterReference = `${selectedBook} ${selectedChapter}`;
 
-      const verses = await fetchMultipleVerses(
-        selectedTranslation,
-        chapterReference
-      );
+      const [verses, headingsData] = await Promise.all([
+        fetchMultipleVerses(selectedTranslation, chapterReference),
+        fetchHeadings(selectedTranslation, selectedBook, selectedChapter),
+      ]);
 
       // Check if request was aborted
       if (abortControllerRef.current?.signal.aborted) {
@@ -70,6 +71,7 @@ const ChapterReader = ({
       }));
 
       setChapterVerses(transformedVerses);
+      setHeadings(headingsData);
     } catch (err) {
       if (
         err.name !== "AbortError" &&
@@ -111,7 +113,7 @@ const ChapterReader = ({
     // Use requestAnimationFrame for smooth scrolling
     const scrollToVerse = () => {
       const verseElement = document.getElementById(
-        `verse-${highlightedVerse.verse}`
+        `verse-${highlightedVerse.verse}`,
       );
       if (verseElement) {
         verseElement.scrollIntoView({
@@ -178,7 +180,7 @@ const ChapterReader = ({
     // Get verse content with individual verse numbers
     const verseLines = sortedVerseNumbers.map((verseNumber) => {
       const verse = chapterVerses.find(
-        (v) => (v.verse || chapterVerses.indexOf(v) + 1) === verseNumber
+        (v) => (v.verse || chapterVerses.indexOf(v) + 1) === verseNumber,
       );
       const verseText = verse?.text || "";
       console.log(`Debug: Verse ${verseNumber}, text: "${verseText}"`);
@@ -216,18 +218,33 @@ const ChapterReader = ({
         verseNumber < highlightedVerse.verse + (highlightedVerse.count || 1);
       const isSelected = selectedVerses.has(verseNumber);
 
+      const currentHeadings = headings.filter(
+        (h) => parseInt(h.start) === parseInt(verseNumber),
+      );
+
       return (
-        <div
-          key={`${selectedBook}-${selectedChapter}-${verseNumber}`}
-          className={`verse-item ${isHighlighted ? "highlighted" : ""} ${
-            isSelected ? "selected" : ""
-          }`}
-          id={`verse-${verseNumber}`}
-          onClick={() => handleVerseClick(verseNumber)}
+        <React.Fragment
+          key={`${selectedBook}-${selectedChapter}-${verseNumber}-wrapper`}
         >
-          <span className="verse-number">{verseNumber}</span>
-          <span className="verse-text">{verse.text}</span>
-        </div>
+          {currentHeadings.map((h, i) => (
+            <div
+              key={`heading-${verseNumber}-${i}`}
+              className="pericope-heading"
+            >
+              {h.heading}
+            </div>
+          ))}
+          <div
+            className={`verse-item ${isHighlighted ? "highlighted" : ""} ${
+              isSelected ? "selected" : ""
+            }`}
+            id={`verse-${verseNumber}`}
+            onClick={() => handleVerseClick(verseNumber)}
+          >
+            <span className="verse-number">{verseNumber}</span>
+            <span className="verse-text">{verse.text}</span>
+          </div>
+        </React.Fragment>
       );
     });
   }, [
@@ -237,6 +254,7 @@ const ChapterReader = ({
     selectedBook,
     selectedChapter,
     handleVerseClick,
+    headings,
   ]);
 
   if (!selectedBook || !selectedChapter) {

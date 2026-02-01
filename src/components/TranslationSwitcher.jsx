@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { createPortal } from "react-dom";
 import "./TranslationSwitcher.css";
 
 const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
@@ -15,7 +16,9 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
     Chinese: true,
   });
   const [dropdownPosition, setDropdownPosition] = useState("down");
+  const [triggerRect, setTriggerRect] = useState(null);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
 
   // Memoized translations array to prevent unnecessary re-renders
   const translations = useMemo(
@@ -103,12 +106,17 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
         category: "Chinese",
       },
     ],
-    []
+    [],
   );
 
   // Optimized click outside handler with useCallback
   const handleClickOutside = useCallback((event) => {
-    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target) &&
+      menuRef.current &&
+      !menuRef.current.contains(event.target)
+    ) {
       setShowDropdown(false);
       // Clean up CSS custom property
       if (window.innerWidth <= 480) {
@@ -129,7 +137,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
   const currentTranslation = useMemo(
     () =>
       translations.find((t) => t.id === selectedTranslation) || translations[0],
-    [translations, selectedTranslation]
+    [translations, selectedTranslation],
   );
 
   // Optimized translation selection handler
@@ -141,7 +149,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
         setShowDropdown(false);
       }
     },
-    [translations, onTranslationChange]
+    [translations, onTranslationChange],
   );
 
   // Optimized dropdown toggle handler with position calculation
@@ -160,8 +168,8 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
         const estimatedDropdownHeight = isVerySmall
           ? Math.min(viewportHeight * 0.35, 250)
           : isMobile
-          ? Math.min(viewportHeight * 0.4, 300)
-          : Math.min(viewportHeight * 0.5, 400);
+            ? Math.min(viewportHeight * 0.4, 300)
+            : Math.min(viewportHeight * 0.5, 400);
 
         // For very small screens, calculate position accounting for scroll
         if (isVerySmall) {
@@ -175,13 +183,13 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
           ) {
             document.documentElement.style.setProperty(
               "--dropdown-top",
-              `${absoluteTop - 8}px`
+              `${absoluteTop - 8}px`,
             );
             setDropdownPosition("up");
           } else {
             document.documentElement.style.setProperty(
               "--dropdown-top",
-              `${absoluteTop + rect.height + 8}px`
+              `${absoluteTop + rect.height + 8}px`,
             );
             setDropdownPosition("down");
           }
@@ -320,7 +328,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
             </div>
           )}
         </div>
-      )
+      ),
     );
   }, [
     groupedTranslations,
@@ -358,38 +366,51 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
         </div>
       </button>
 
-      {showDropdown && (
-        <div
-          className={`translation-dropdown ${
-            dropdownPosition === "up" ? "position-up" : ""
-          }`}
-          role="menu"
-        >
-          <div className="dropdown-header">
-            <h3>Bible Translations</h3>
-            <button
-              className="close-button"
-              onClick={closeDropdown}
-              aria-label="Close translation menu"
-              type="button"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
+      {showDropdown &&
+        createPortal(
+          <div
+            className={`translation-dropdown ${
+              dropdownPosition === "up" ? "position-up" : ""
+            }`}
+            style={{
+              "--trigger-top": `${triggerRect?.top}px`,
+              "--trigger-bottom": `${triggerRect?.bottom}px`,
+              "--trigger-left": `${triggerRect?.left}px`,
+              "--trigger-right": `${
+                window.innerWidth - (triggerRect?.right || 0)
+              }px`,
+              "--trigger-width": `${triggerRect?.width}px`,
+              "--trigger-height": `${triggerRect?.height}px`,
+            }}
+            role="menu"
+            ref={menuRef}
+          >
+            <div className="dropdown-header">
+              <h3>Bible Translations</h3>
+              <button
+                className="close-button"
+                onClick={closeDropdown}
+                aria-label="Close translation menu"
+                type="button"
               >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-          <div className="translations-list" role="menubar">
-            {translationItems}
-          </div>
-        </div>
-      )}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="translations-list" role="menubar">
+              {translationItems}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

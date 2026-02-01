@@ -5,7 +5,9 @@
   line-height: 1.6;
   padding: var(--spacing-sm);
   border-radius: var(--radius);
-  transition: all 0.2s ease, min-height 0.3s ease;
+  transition:
+    all 0.2s ease,
+    min-height 0.3s ease;
   min-height: 2em;
 }
 
@@ -72,6 +74,18 @@
   color: var(--error-color);
   font-size: 14px;
   text-align: center;
+}
+
+/* Pericope Headings */
+.pericope-heading {
+  font-size: 1.1em;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-primary);
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  opacity: 0.9;
+  width: 100%;
 }
 
 .verses-list {

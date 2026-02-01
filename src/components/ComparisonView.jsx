@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./ComparisonView.css";
-import { fetchMultipleVerses } from "../services/bibleApi";
+import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
 
 // Helper function to split verse content by verse numbers and render individual verses
 const splitVerseContent = (verseText) => {
@@ -65,8 +65,10 @@ const ComparisonView = ({
   selectedVerses = new Set(),
   onVerseSelect,
   syncEnabled = false,
+  headings: externalHeadings,
 }) => {
   const [verses, setVerses] = useState([]);
+  const [headings, setHeadings] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef(null);
@@ -82,26 +84,28 @@ const ComparisonView = ({
         isEmpty: !verseData[translation], // Flag to indicate missing verse
       }));
       setVerses(processedVerses);
+      setHeadings(externalHeadings || []);
       setError(null);
       setLoading(false); // Clear any existing loading state
     } else if (!useAlignedData && book && chapter) {
       // Fetch verses independently (show loading for this translation only)
-      const fetchVerses = async () => {
+      const fetchVersesAndHeadings = async () => {
         setLoading(true);
         try {
           const chapterReference = `${book} ${chapter}`;
-          const versesData = await fetchMultipleVerses(
-            translation,
-            chapterReference
-          );
+          const [versesData, headingsData] = await Promise.all([
+            fetchMultipleVerses(translation, chapterReference),
+            fetchHeadings(translation, book, chapter),
+          ]);
 
           setVerses(
             versesData.map((verse) => ({
               verse: verse.verse,
               text: verse.text,
               isEmpty: false,
-            }))
+            })),
           );
+          setHeadings(headingsData);
           setError(null);
         } catch (err) {
           setError(err.message);
@@ -111,9 +115,16 @@ const ComparisonView = ({
         }
       };
 
-      fetchVerses();
+      fetchVersesAndHeadings();
     }
-  }, [book, chapter, translation, useAlignedData, alignedVerses]);
+  }, [
+    book,
+    chapter,
+    translation,
+    useAlignedData,
+    alignedVerses,
+    externalHeadings,
+  ]);
 
   // Update verse positions (simplified)
   useEffect(() => {
@@ -134,7 +145,7 @@ const ComparisonView = ({
         onVerseSelect(verseNumber);
       }
     },
-    [onVerseSelect]
+    [onVerseSelect],
   );
 
   // Auto-scroll to highlighted verse
@@ -181,46 +192,58 @@ const ComparisonView = ({
       {verses.length > 0 && (
         <div className="verses-list">
           {verses.map((verse) => (
-            <div
-              key={`${id}-${verse.verse}`}
-              id={`${id}-verse-${verse.verse}`}
-              ref={(el) => (verseRefs.current[verse.verse] = el)}
-              className={`verse-item ${
-                highlightedVerse?.verse === verse.verse ? "highlighted" : ""
-              } ${verse.isEmpty ? "empty-verse" : ""} ${
-                selectedVerses.has(verse.verse) ? "selected" : ""
-              } selectable`}
-              onClick={() => handleVerseClick(verse.verse)}
-            >
-              <span className="verse-number">{verse.verse}</span>
-              <span className="verse-text">
-                {verse.isEmpty ? (
-                  <span className="missing-verse">—</span>
-                ) : (
-                  (() => {
-                    const verseSegments = splitVerseContent(verse.text);
-                    if (verseSegments.length <= 1) {
-                      // Single verse or no segments, display normally
-                      return verse.text;
-                    } else {
-                      // Multiple verse segments, render each on its own line
-                      return verseSegments.map((segment, index) => (
-                        <div key={index} className="verse-segment">
-                          {segment.verseNumber && (
-                            <span className="inline-verse-number">
-                              {segment.verseNumber}
+            <React.Fragment key={`${id}-${verse.verse}-wrapper`}>
+              {(headings || [])
+                .filter((h) => parseInt(h.start) === parseInt(verse.verse))
+                .map((h, i) => (
+                  <div
+                    key={`heading-${verse.verse}-${i}`}
+                    className="pericope-heading"
+                  >
+                    {h.heading}
+                  </div>
+                ))}
+              <div
+                key={`${id}-${verse.verse}`}
+                id={`${id}-verse-${verse.verse}`}
+                ref={(el) => (verseRefs.current[verse.verse] = el)}
+                className={`verse-item ${
+                  highlightedVerse?.verse === verse.verse ? "highlighted" : ""
+                } ${verse.isEmpty ? "empty-verse" : ""} ${
+                  selectedVerses.has(verse.verse) ? "selected" : ""
+                } selectable`}
+                onClick={() => handleVerseClick(verse.verse)}
+              >
+                <span className="verse-number">{verse.verse}</span>
+                <span className="verse-text">
+                  {verse.isEmpty ? (
+                    <span className="missing-verse">—</span>
+                  ) : (
+                    (() => {
+                      const verseSegments = splitVerseContent(verse.text);
+                      if (verseSegments.length <= 1) {
+                        // Single verse or no segments, display normally
+                        return verse.text;
+                      } else {
+                        // Multiple verse segments, render each on its own line
+                        return verseSegments.map((segment, index) => (
+                          <div key={index} className="verse-segment">
+                            {segment.verseNumber && (
+                              <span className="inline-verse-number">
+                                {segment.verseNumber}
+                              </span>
+                            )}
+                            <span className="verse-segment-text">
+                              {segment.content}
                             </span>
-                          )}
-                          <span className="verse-segment-text">
-                            {segment.content}
-                          </span>
-                        </div>
-                      ));
-                    }
-                  })()
-                )}
-              </span>
-            </div>
+                          </div>
+                        ));
+                      }
+                    })()
+                  )}
+                </span>
+              </div>
+            </React.Fragment>
           ))}
         </div>
       )}
