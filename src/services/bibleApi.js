@@ -179,6 +179,35 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
   }
 };
 
+// Fetch pericope headings from api.blessings365.top
+export const fetchHeadings = async (translation, book, chapter) => {
+  try {
+    const url = `${API_BASE_URL}/${translation.toUpperCase()}/headings?book=${encodeURIComponent(
+      book
+    )}&chapter=${chapter}`;
+
+    console.log("Fetching headings from:", url);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return []; // Return empty array if no headings found
+      }
+      throw new Error(
+        `API request failed: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+    return data.headings || [];
+  } catch (error) {
+    console.error("Error in fetchHeadings:", error);
+    // Return empty array on error to avoid breaking the UI for missing headings
+    return [];
+  }
+};
+
 // Main fetch function that determines whether to use single or multiple endpoint
 export const fetchVerses = async (translation, reference) => {
   try {
@@ -216,5 +245,6 @@ export const fetchVerses = async (translation, reference) => {
 export default {
   fetchSingleVerse,
   fetchMultipleVerses,
+  fetchHeadings,
   fetchVerses,
 };

@@ -22,8 +22,9 @@
   position: relative;
   box-shadow: var(--shadow-light);
   min-height: 40px; /* Reduced from 48px */
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
   letter-spacing: -0.022em;
 }
 
@@ -167,24 +168,21 @@
   color: white;
 }
 
-/* Enhanced Dropdown */
+/* Enhanced Dropdown with Portal Positioning */
 .translation-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  top: calc(var(--trigger-bottom) + 8px);
+  right: calc(100vw - var(--trigger-right));
   left: auto;
   width: 280px;
-  background: var(--bg-overlay);
+  background: var(--bg-primary);
   border: 1px solid var(--divider-color);
   border-radius: var(--radius-large, 16px);
   box-shadow: var(--shadow-heavy);
   max-height: min(80vh, calc(100vh - 200px));
   overflow: hidden;
-  z-index: 1000;
+  z-index: 9999; /* Ensure it's above everything */
   animation: dropdownAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Prevent overflow off-screen */
-  max-width: calc(100vw - 32px);
   transform-origin: top right;
 }
 
@@ -209,21 +207,40 @@
   }
 }
 
-/* Very small screens */
+/* Very small screens - Bottom Sheet */
 @media (max-width: 480px) {
   .translation-dropdown {
     position: fixed;
-    top: var(--dropdown-top, 100px);
-    bottom: auto;
-    right: 12px;
-    left: 12px;
-    width: auto;
-    max-height: calc(100vh - var(--dropdown-top, 100px) - 20px);
+    top: auto !important;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 85vh; /* Increased height */
     margin: 0;
     z-index: 1001;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    border-radius: 20px 20px 0 0; /* Only top corners rounded */
+    border-bottom: none;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  /* Handle grabber for affordance */
+  .translation-dropdown::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 5px;
+    background-color: var(--divider-color);
+    border-radius: 2.5px;
+    z-index: 1002;
+    pointer-events: none;
   }
 
   /* Position dropdown relative to the button */
@@ -231,22 +248,41 @@
     position: static;
   }
 
+  /* Override any positioning classes */
   .translation-dropdown.position-up {
-    top: 20px;
-    bottom: auto;
-    max-height: calc(var(--dropdown-top, 100px) - 40px);
-    transform-origin: bottom center;
-    animation: dropdownAppearUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    top: auto;
+    bottom: 0;
+    transform-origin: center bottom;
+    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 85vh;
   }
 
-  /* Ensure header doesn't take up too much space */
+  /* Ensure header doesn't take up too much space and makes room for grabber */
   .translation-dropdown .dropdown-header {
     flex-shrink: 0;
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    padding: 20px 20px 12px; /* Top padding increased for grabber */
+    border-bottom: 1px solid var(--divider-color);
   }
 
   .translation-dropdown .dropdown-header h3 {
-    font-size: 16px;
+    font-size: 18px;
+    margin-top: 4px;
+  }
+
+  /* Ensure full width list */
+  .translations-list {
+    padding: 16px 20px; /* More standard padding */
+    width: 100%;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
@@ -296,8 +332,9 @@
   color: var(--text-primary, #1d1d1f);
   margin: 0;
   letter-spacing: -0.02em;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
 }
 
 .close-button {
@@ -402,24 +439,11 @@
     flex: 1;
     min-height: 0;
     max-height: none;
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    padding: 16px 20px;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-  }
-
-  /* Improve scrolling on very small screens */
-  .translations-list::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .translations-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .translations-list::-webkit-scrollbar-thumb {
-    background: var(--text-tertiary, #a1a1a6);
-    border-radius: 2px;
   }
 }
 
@@ -437,7 +461,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-sm, 8px) 0;
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: 4px;
   background: none;
   border: none;
   width: 100%;
@@ -462,8 +486,9 @@
   color: var(--text-primary, #1d1d1f);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
 }
 
 .category-count {
@@ -499,6 +524,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs, 4px);
+  padding: 4px;
   overflow: hidden;
   animation: expandCategory 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -527,8 +553,9 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
   position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
   letter-spacing: -0.022em;
   min-height: 48px;
 }
@@ -644,24 +671,6 @@
 .translation-item.active .check-icon {
   opacity: 1;
   transform: scale(1);
-}
-
-/* Enhanced scrollbar for translations list */
-.translations-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.translations-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.translations-list::-webkit-scrollbar-thumb {
-  background: var(--text-tertiary, #a1a1a6);
-  border-radius: 3px;
-}
-
-.translations-list::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary, #86868b);
 }
 
 /* Focus states for accessibility */

@@ -17,7 +17,9 @@
   transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05),
+  box-shadow:
+    0 4px 30px rgba(0, 0, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   height: 48px;
 }
@@ -81,8 +83,9 @@
   font-weight: 500;
   color: var(--text-primary);
   transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
   letter-spacing: -0.022em;
   z-index: 1;
   position: relative;
@@ -214,8 +217,9 @@
   align-items: center;
   margin-bottom: 4px;
   position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
+    Helvetica, Arial, sans-serif;
   letter-spacing: -0.022em;
   background: transparent;
   border: 1px solid transparent;
@@ -394,27 +398,6 @@
     font-size: 13px;
     border-radius: 6px;
   }
-}
-
-/* Enhanced scrollbar for suggestions */
-.suggestions-list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.suggestions-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.suggestions-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-.suggestions-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-  background-clip: content-box;
 }
 
 /* Focus states for accessibility */

@@ -250,6 +250,17 @@
   }
 }
 
+/* Pericope Headings */
+.pericope-heading {
+  font-size: 1.1em;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-primary);
+  margin-top: var(--spacing-lg, 24px);
+  margin-bottom: var(--spacing-sm, 8px);
+  opacity: 0.9;
+}
+
 /* Verses Container */
 .verses-container {
   max-width: 800px;
@@ -574,22 +585,4 @@
 /* Smooth scrolling for verse navigation */
 html {
   scroll-behavior: smooth;
-}
-
-/* Custom scrollbar for chapter content */
-.chapter-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chapter-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chapter-content::-webkit-scrollbar-thumb {
-  background: var(--text-tertiary, #a1a1a6);
-  border-radius: 3px;
-}
-
-.chapter-content::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary, #86868b);
 }
