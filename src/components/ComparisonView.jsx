@@ -56,16 +56,14 @@ const ComparisonView = ({
   translation,
   book,
   chapter,
-  bibleStructure,
   highlightedVerse,
-  onScroll,
   onVersePositionUpdate,
   alignedVerses,
   useAlignedData = false,
   selectedVerses = new Set(),
   onVerseSelect,
-  syncEnabled = false,
   headings: externalHeadings,
+  className = "",
 }) => {
   const [verses, setVerses] = useState([]);
   const [headings, setHeadings] = useState([]);
@@ -162,49 +160,53 @@ const ComparisonView = ({
   }, [highlightedVerse, verses]);
 
   return (
-    <div className="comparison-view-container" ref={containerRef} id={id}>
+    <div
+      className={`comparison-view-container${className ? ` ${className}` : ""}`}
+      ref={containerRef}
+      id={id}
+    >
       <div className="view-header">
         <h4>{translation}</h4>
       </div>
 
       {loading && (
         <div className="loading-container">
-          <div className="loading-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-            </svg>
-          </div>
+          <div className="loading-spinner" />
           <div className="loading-text">Loading {translation}...</div>
-          <div className="loading-dots">
-            <div className="loading-dot"></div>
-            <div className="loading-dot"></div>
-            <div className="loading-dot"></div>
-          </div>
         </div>
       )}
 
       {error && (
         <div className="error-message">
-          Error loading {translation}: {error}
+          Unable to load {translation}. Please try again.
         </div>
       )}
 
       {verses.length > 0 && (
         <div className="verses-list">
           {verses.map((verse) => (
-            <React.Fragment key={`${id}-${verse.verse}-wrapper`}>
-              {(headings || [])
-                .filter((h) => parseInt(h.start) === parseInt(verse.verse))
-                .map((h, i) => (
-                  <div
-                    key={`heading-${verse.verse}-${i}`}
-                    className="pericope-heading"
-                  >
-                    {h.heading}
-                  </div>
-                ))}
+            <div
+              key={`${id}-${verse.verse}-row`}
+              id={`${id}-row-${verse.verse}`}
+              className="verse-row"
+            >
+              {/* Heading area always rendered so heights can be equalized across columns */}
               <div
-                key={`${id}-${verse.verse}`}
+                id={`${id}-heading-${verse.verse}`}
+                className="verse-heading-area"
+              >
+                {(headings || [])
+                  .filter((h) => parseInt(h.start) === parseInt(verse.verse))
+                  .map((h, i) => (
+                    <div
+                      key={`heading-${verse.verse}-${i}`}
+                      className="pericope-heading"
+                    >
+                      {h.heading}
+                    </div>
+                  ))}
+              </div>
+              <div
                 id={`${id}-verse-${verse.verse}`}
                 ref={(el) => (verseRefs.current[verse.verse] = el)}
                 className={`verse-item ${
@@ -222,10 +224,8 @@ const ComparisonView = ({
                     (() => {
                       const verseSegments = splitVerseContent(verse.text);
                       if (verseSegments.length <= 1) {
-                        // Single verse or no segments, display normally
                         return verse.text;
                       } else {
-                        // Multiple verse segments, render each on its own line
                         return verseSegments.map((segment, index) => (
                           <div key={index} className="verse-segment">
                             {segment.verseNumber && (
@@ -243,7 +243,7 @@ const ComparisonView = ({
                   )}
                 </span>
               </div>
-            </React.Fragment>
+            </div>
           ))}
         </div>
       )}

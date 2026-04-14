@@ -13,10 +13,13 @@ const BookSelector = ({
 }) => {
   const [showBooks, setShowBooks] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showOldTestament, setShowOldTestament] = useState(true);
   const [showNewTestament, setShowNewTestament] = useState(true);
   const bookDropdownRef = useRef(null);
   const chapterDropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const selectedBookRef = useRef(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -26,6 +29,7 @@ const BookSelector = ({
         !bookDropdownRef.current.contains(event.target)
       ) {
         setShowBooks(false);
+        setSearchQuery("");
       }
       if (
         chapterDropdownRef.current &&
@@ -41,10 +45,23 @@ const BookSelector = ({
     };
   }, []);
 
+  // Focus search input and scroll to selected book when opening
+  useEffect(() => {
+    if (showBooks) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+        selectedBookRef.current?.scrollIntoView({
+          block: "center",
+          behavior: "instant",
+        });
+      }, 100);
+    }
+  }, [showBooks]);
+
   if (!bibleStructure) return null;
 
   const currentBook = bibleStructure.books.find(
-    (book) => book.name === selectedBook
+    (book) => book.name === selectedBook,
   );
   const totalChapters = currentBook?.chapters || 0;
 
@@ -52,6 +69,7 @@ const BookSelector = ({
     onBookChange(book.name);
     onChapterChange(1); // Start at chapter 1 when selecting a new book
     setShowBooks(false);
+    setSearchQuery("");
   };
 
   const handleChapterSelect = (chapterNumber) => {
@@ -62,6 +80,23 @@ const BookSelector = ({
   // Group books by testament
   const oldTestament = bibleStructure.books.slice(0, 39);
   const newTestament = bibleStructure.books.slice(39);
+
+  // Filter books based on search query
+  const filterBooks = (books) => {
+    if (!searchQuery.trim()) return books;
+    const query = searchQuery.toLowerCase();
+    return books.filter((book) => {
+      const localizedName = getBookName(
+        book.name,
+        selectedTranslation,
+      ).toLowerCase();
+      const englishName = book.name.toLowerCase();
+      return localizedName.includes(query) || englishName.includes(query);
+    });
+  };
+
+  const filteredOldTestament = filterBooks(oldTestament);
+  const filteredNewTestament = filterBooks(newTestament);
 
   if (integrated) {
     return (
@@ -103,7 +138,10 @@ const BookSelector = ({
                   <h3>Choose a Book</h3>
                   <button
                     className="close-button"
-                    onClick={() => setShowBooks(false)}
+                    onClick={() => {
+                      setShowBooks(false);
+                      setSearchQuery("");
+                    }}
                     aria-label="Close menu"
                   >
                     <svg
@@ -117,104 +155,176 @@ const BookSelector = ({
                     </svg>
                   </button>
                 </div>
-                <div className="testament-section">
-                  <button
-                    className="section-header collapsible"
-                    onClick={() => setShowOldTestament(!showOldTestament)}
+                <div className="book-search-container">
+                  <svg
+                    className="search-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    <span>
-                      {getTestamentLabel("oldTestament", selectedTranslation)}
-                    </span>
-                    <svg
-                      className={`chevron-icon ${
-                        showOldTestament ? "expanded" : ""
-                      }`}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    className="book-search-input"
+                    placeholder="Search books..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      className="search-clear"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search"
                     >
-                      <polyline points="6,9 12,15 18,9"></polyline>
-                    </svg>
-                  </button>
-                  {showOldTestament && (
-                    <div className="books-list">
-                      {oldTestament.map((book) => (
-                        <button
-                          key={book.name}
-                          className={`book-item ${
-                            selectedBook === book.name ? "active" : ""
-                          }`}
-                          onClick={() => handleBookSelect(book)}
-                        >
-                          <span className="book-name">
-                            {getBookName(book.name, selectedTranslation)}
-                          </span>
-                          {selectedBook === book.name && (
-                            <svg
-                              className="check-icon"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <polyline points="20,6 9,17 4,12"></polyline>
-                            </svg>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
                   )}
                 </div>
-
-                <div className="testament-section">
-                  <button
-                    className="section-header collapsible"
-                    onClick={() => setShowNewTestament(!showNewTestament)}
-                  >
-                    <span>
-                      {getTestamentLabel("newTestament", selectedTranslation)}
-                    </span>
-                    <svg
-                      className={`chevron-icon ${
-                        showNewTestament ? "expanded" : ""
-                      }`}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="6,9 12,15 18,9"></polyline>
-                    </svg>
-                  </button>
-                  {showNewTestament && (
-                    <div className="books-list">
-                      {newTestament.map((book) => (
-                        <button
-                          key={book.name}
-                          className={`book-item ${
-                            selectedBook === book.name ? "active" : ""
-                          }`}
-                          onClick={() => handleBookSelect(book)}
-                        >
-                          <span className="book-name">
-                            {getBookName(book.name, selectedTranslation)}
+                <div className="books-scroll-container">
+                  {filteredOldTestament.length > 0 && (
+                    <div className="testament-section">
+                      <button
+                        className="section-header sticky-header collapsible"
+                        onClick={() => setShowOldTestament(!showOldTestament)}
+                      >
+                        <div className="section-header-left">
+                          <span>
+                            {getTestamentLabel(
+                              "oldTestament",
+                              selectedTranslation,
+                            )}
                           </span>
-                          {selectedBook === book.name && (
-                            <svg
-                              className="check-icon"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
+                          <span className="section-count">
+                            {filteredOldTestament.length}
+                          </span>
+                        </div>
+                        <svg
+                          className={`section-chevron ${showOldTestament ? "expanded" : ""}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                      </button>
+                      {showOldTestament && (
+                        <div className="books-list">
+                          {filteredOldTestament.map((book) => (
+                            <button
+                              key={book.name}
+                              ref={
+                                selectedBook === book.name
+                                  ? selectedBookRef
+                                  : null
+                              }
+                              className={`book-item ${
+                                selectedBook === book.name ? "active" : ""
+                              }`}
+                              onClick={() => handleBookSelect(book)}
                             >
-                              <polyline points="20,6 9,17 4,12"></polyline>
-                            </svg>
-                          )}
-                        </button>
-                      ))}
+                              <span className="book-name">
+                                {getBookName(book.name, selectedTranslation)}
+                              </span>
+                              {selectedBook === book.name && (
+                                <svg
+                                  className="check-icon"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <polyline points="20,6 9,17 4,12"></polyline>
+                                </svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {filteredNewTestament.length > 0 && (
+                    <div className="testament-section">
+                      <button
+                        className="section-header sticky-header collapsible"
+                        onClick={() => setShowNewTestament(!showNewTestament)}
+                      >
+                        <div className="section-header-left">
+                          <span>
+                            {getTestamentLabel(
+                              "newTestament",
+                              selectedTranslation,
+                            )}
+                          </span>
+                          <span className="section-count">
+                            {filteredNewTestament.length}
+                          </span>
+                        </div>
+                        <svg
+                          className={`section-chevron ${showNewTestament ? "expanded" : ""}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                      </button>
+                      {showNewTestament && (
+                        <div className="books-list">
+                          {filteredNewTestament.map((book) => (
+                            <button
+                              key={book.name}
+                              ref={
+                                selectedBook === book.name
+                                  ? selectedBookRef
+                                  : null
+                              }
+                              className={`book-item ${
+                                selectedBook === book.name ? "active" : ""
+                              }`}
+                              onClick={() => handleBookSelect(book)}
+                            >
+                              <span className="book-name">
+                                {getBookName(book.name, selectedTranslation)}
+                              </span>
+                              {selectedBook === book.name && (
+                                <svg
+                                  className="check-icon"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <polyline points="20,6 9,17 4,12"></polyline>
+                                </svg>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {filteredOldTestament.length === 0 &&
+                    filteredNewTestament.length === 0 && (
+                      <div className="no-results">
+                        <p>No books found for "{searchQuery}"</p>
+                      </div>
+                    )}
                 </div>
               </div>
             )}
@@ -258,6 +368,11 @@ const BookSelector = ({
                     <span className="chapter-label">Chapter</span>
                     <span className="chapter-number">{selectedChapter}</span>
                     <span className="chapter-total">of {totalChapters}</span>
+                    <span className="chapter-compact-display">
+                      <span className="current-chapter">{selectedChapter}</span>
+                      <span className="chapter-separator">/</span>
+                      <span className="total-chapters">{totalChapters}</span>
+                    </span>
                   </div>
                   <div
                     className={`chapter-nav-btn ${
@@ -342,7 +457,7 @@ const BookSelector = ({
                             </svg>
                           )}
                         </button>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
@@ -461,7 +576,7 @@ const BookSelector = ({
                       >
                         {chapterNum}
                       </button>
-                    )
+                    ),
                   )}
                 </div>
               </div>

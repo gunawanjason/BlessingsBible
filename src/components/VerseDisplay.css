@@ -1,4 +1,4 @@
-/* Apple WWDC-style Verse Display */
+/* Verse Display — Warm Theme */
 .verse-display {
   width: 100%;
   max-width: 800px;
@@ -14,54 +14,34 @@
 }
 
 .placeholder-text {
-  color: var(--text-secondary, #86868b);
+  color: var(--text-secondary, #7a6e5d);
   font-size: 17px;
   font-weight: 400;
   text-align: center;
-  font-style: normal;
+  font-style: italic;
   line-height: 1.5;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Arial, sans-serif;
-  letter-spacing: -0.022em;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
+  letter-spacing: -0.01em;
 }
 
 .verse-item {
   background: var(--bg-tertiary, #ffffff);
-  border: 1px solid var(--divider-color, #e5e5ea);
+  border: 1px solid var(--divider-color, #e8e2d9);
   border-radius: var(--radius-large, 16px);
   padding: var(--spacing-xl, 32px);
   margin-bottom: var(--spacing-lg, 24px);
   box-shadow: var(--shadow-light);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   position: relative;
   overflow: hidden;
 }
 
-.verse-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color, #007aff) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
 .verse-item:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
-  border-color: rgba(0, 122, 255, 0.2);
-}
-
-.verse-item:hover::before {
-  opacity: 0.05;
+  border-color: var(--primary-color, #a0782c);
 }
 
 .verse-item:last-child {
@@ -71,21 +51,19 @@
 .verse-reference {
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color, #a0782c);
   margin-bottom: var(--spacing-md, 16px);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
 }
 
 .verse-text {
   font-size: 18px;
   line-height: 1.6;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary, #2c2416);
   font-weight: 400;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-display, "Lora", Georgia, serif);
   letter-spacing: -0.01em;
 }
 
@@ -183,26 +161,23 @@
   }
 }
 
-/* Dark mode support (if needed in future) */
-@media (prefers-color-scheme: dark) {
-  .verse-item {
-    background: rgba(28, 28, 30, 0.95);
-    border-color: rgba(99, 99, 102, 0.2);
-  }
+/* Dark mode support */
+[data-theme="dark"] .verse-item {
+  background: var(--bg-secondary, #252019);
+  border-color: var(--border-color, #3a3328);
+}
 
-  .placeholder-text {
-    color: rgba(235, 235, 245, 0.6);
-  }
+[data-theme="dark"] .placeholder-text {
+  color: var(--text-secondary, #a39882);
+}
 
-  .verse-text {
-    color: rgba(235, 235, 245, 0.86);
-  }
+[data-theme="dark"] .verse-text {
+  color: var(--text-primary, #e8dfd0);
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  .verse-item,
-  .verse-item::before {
+  .verse-item {
     transition: none;
   }
 

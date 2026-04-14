@@ -1,4 +1,10 @@
-/* Clean reset for the modern design */
+/* BlessingsBible — Global Styles */
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -6,11 +12,20 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  overflow-x: clip;
+  width: 100%;
+  max-width: 100vw;
+  overscroll-behavior-x: none;
+}
+
 #root {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
 }
 
 body {
@@ -18,9 +33,18 @@ body {
   padding: 0;
   min-height: 100vh;
   width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
-/* Remove any conflicting button styles */
+/* Prevent any element from causing horizontal scroll */
+@media (max-width: 768px) {
+  * {
+    max-width: 100vw;
+  }
+}
+
 button {
   font-family: inherit;
   cursor: pointer;

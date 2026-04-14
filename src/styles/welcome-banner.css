@@ -1,0 +1,98 @@
+/* First-visit welcome banner */
+
+.welcome-banner {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  animation: slideDown 0.3s ease-out;
+}
+
+.welcome-content {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-md) clamp(12px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.welcome-text h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.welcome-text p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.welcome-tip {
+  margin-top: 6px !important;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.welcome-tip strong {
+  color: var(--text-primary);
+}
+
+.welcome-text kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 11px;
+  font-family: var(--font-body);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+.welcome-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+}
+
+.welcome-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.welcome-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Touch device: ensure buttons are 44px */
+@media (pointer: coarse) {
+  .welcome-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-text h2 {
+    font-size: 14px;
+  }
+
+  .welcome-text p {
+    font-size: 12px;
+  }
+}

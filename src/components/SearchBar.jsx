@@ -41,7 +41,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
       let book = bibleStructure.books.find((book) => {
         if (book.name.toLowerCase() === searchTerm.toLowerCase()) return true;
         return book.abbreviations.some(
-          (abbr) => abbr.toLowerCase() === searchTerm.toLowerCase()
+          (abbr) => abbr.toLowerCase() === searchTerm.toLowerCase(),
         );
       });
 
@@ -50,10 +50,10 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
       // If not found, try to find by translated name
       const englishName = getEnglishBookName(searchTerm, selectedTranslation);
       return bibleStructure.books.find(
-        (book) => book.name.toLowerCase() === englishName.toLowerCase()
+        (book) => book.name.toLowerCase() === englishName.toLowerCase(),
       );
     },
-    [bibleStructure, selectedTranslation]
+    [bibleStructure, selectedTranslation],
   );
 
   // Optimized suggestions generator with memoization (supports translated names)
@@ -66,7 +66,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
 
       // Parse the current input to determine what stage we're at
       const spaceMatch = trimmedInput.match(
-        /^([a-zA-Z0-9\s\u4e00-\u9fff]+?)(\s+(\d+))?(\s*:(\d+)?)?$/
+        /^([a-zA-Z0-9\s\u4e00-\u9fff]+?)(\s+(\d+))?(\s*:(\d+)?)?$/,
       );
 
       if (!spaceMatch) return [];
@@ -160,7 +160,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
 
       return suggestions;
     },
-    [bibleStructure, findBook, selectedTranslation]
+    [bibleStructure, findBook, selectedTranslation],
   );
 
   // Debounced input change handler
@@ -182,7 +182,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
         setShowSuggestions(newSuggestions.length > 0);
       }, 150); // 150ms debounce
     },
-    [generateSuggestions]
+    [generateSuggestions],
   );
 
   // Helper function to determine autocomplete stage
@@ -213,7 +213,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
       // If we have verse separator, we're at verse stage
       return "verse";
     },
-    [bibleStructure, findBook]
+    [bibleStructure, findBook],
   );
 
   // Optimized suggestion selection
@@ -246,7 +246,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
       setSelectedSuggestionIndex(-1);
       inputRef.current?.focus();
     },
-    [determineAutoCompleteStage, generateSuggestions]
+    [determineAutoCompleteStage, generateSuggestions],
   );
 
   // Optimized keyboard navigation
@@ -263,7 +263,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
         case "ArrowDown":
           e.preventDefault();
           setSelectedSuggestionIndex((prev) =>
-            prev < suggestions.length - 1 ? prev + 1 : prev
+            prev < suggestions.length - 1 ? prev + 1 : prev,
           );
           break;
         case "ArrowUp":
@@ -292,7 +292,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
           break;
       }
     },
-    [showSuggestions, selectedSuggestionIndex, suggestions, selectSuggestion]
+    [showSuggestions, selectedSuggestionIndex, suggestions, selectSuggestion],
   );
 
   const handleSearch = useCallback(() => {
@@ -302,13 +302,13 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
 
       // Parse the query to extract book name
       const spaceMatch = searchQuery.match(
-        /^([a-zA-Z0-9\s\u4e00-\u9fff]+?)(\s+\d+.*)?$/
+        /^([a-zA-Z0-9\s\u4e00-\u9fff]+?)(\s+\d+.*)?$/,
       );
       if (spaceMatch) {
         const [, bookPart, remainder] = spaceMatch;
         const englishBookName = getEnglishBookName(
           bookPart.trim(),
-          selectedTranslation
+          selectedTranslation,
         );
         searchQuery = englishBookName + (remainder || "");
       }
@@ -363,6 +363,23 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
   return (
     <div className="search-bar">
       <div className={`search-container ${showSuggestions ? "active" : ""}`}>
+        <button
+          onClick={handleSearch}
+          className="search-icon"
+          type="button"
+          aria-label="Search verses"
+          tabIndex={-1}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </button>
         <input
           ref={inputRef}
           type="text"
@@ -371,7 +388,7 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
           onKeyDown={handleKeyDown}
           onBlur={handleBlur}
           onFocus={handleFocus}
-          placeholder="Search verses"
+          placeholder="John 3:16"
           className="search-input"
           autoComplete="off"
           autoCapitalize="off"
@@ -400,23 +417,6 @@ const SearchBar = ({ onSearch, selectedTranslation }) => {
             </svg>
           </button>
         )}
-        <button
-          onClick={handleSearch}
-          className={`search-button ${!query.trim() ? "disabled" : ""}`}
-          type="button"
-          disabled={!query.trim()}
-          title="Search verses"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <path d="m21 21-4.35-4.35"></path>
-          </svg>
-        </button>
       </div>
 
       {showSuggestions && suggestions.length > 0 && (

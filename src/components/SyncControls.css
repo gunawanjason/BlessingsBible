@@ -1,3 +1,4 @@
+/* Sync Controls */
 .sync-controls {
   display: flex;
   gap: var(--spacing-md);
@@ -8,6 +9,7 @@
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .sync-toggle {
@@ -18,11 +20,16 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .sync-toggle:hover {
@@ -30,19 +37,19 @@
 }
 
 .sync-toggle.active {
-  background: #007aff;
+  background: var(--primary-color, #a0782c);
   color: white;
-  border-color: #007aff;
+  border-color: var(--primary-color, #a0782c);
 }
 
 .sync-toggle.active:hover {
-  background: #0056cc;
-  border-color: #0056cc;
+  background: var(--primary-hover, #8b6914);
+  border-color: var(--primary-hover, #8b6914);
 }
 
 .sync-toggle svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .translation-tag {
@@ -53,27 +60,29 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
 }
 
 .translation-tag:hover {
-  background: var(--bg-tertiary);
+  background: var(--bg-secondary);
 }
 
 .translation-tag.primary {
-  background: var(--primary-color);
+  background: var(--primary-color, #a0782c);
   color: white;
-  border-color: var(--primary-color);
+  border-color: var(--primary-color, #a0782c);
   cursor: default;
 }
 
 .translation-tag.primary:hover {
-  background: var(--primary-color);
-  opacity: 0.9;
+  background: var(--primary-color, #a0782c);
 }
 
 .translation-tag:disabled {
@@ -101,11 +110,14 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
   padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
 }
 
 .add-translation:hover {
@@ -132,44 +144,82 @@
   text-align: left;
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.1s ease;
 }
 
 .menu-item:hover {
   background: var(--bg-secondary);
 }
 
+/* Touch device: ensure buttons are 44px */
+@media (pointer: coarse) {
+  .sync-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .translation-tag {
+    min-height: 44px;
+  }
+
+  .add-translation {
+    min-height: 44px;
+  }
+
+  .menu-item {
+    min-height: 44px;
+  }
+}
+
 @media (max-width: 768px) {
   .sync-controls {
     flex-direction: row;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 6px;
+    flex-wrap: nowrap;
+    width: max-content;
   }
 
-  /* Hide sync text on mobile, show only icon */
   .sync-toggle .sync-text {
     display: none;
   }
 
   .sync-toggle {
-    padding: var(--spacing-xs);
+    padding: 4px 6px;
     min-width: auto;
+    min-height: 28px;
+    height: 28px;
   }
 
   .controls-group {
-    gap: var(--spacing-xs);
+    gap: 4px;
   }
 
   .translation-tag {
-    font-size: 13px;
-    padding: var(--spacing-xs);
+    font-size: 12px;
+    padding: 3px 8px;
+    min-height: 28px;
+    height: 28px;
   }
 
   .add-translation {
-    font-size: 13px;
-    padding: var(--spacing-xs);
+    font-size: 12px;
+    padding: 3px 8px;
+    min-height: 28px;
+    height: 28px;
+  }
+}
+
+/* Override coarse-pointer 44px rule inside the compact sync row on mobile */
+@media (pointer: coarse) and (max-width: 768px) {
+  .tab-bar-controls .sync-toggle,
+  .tab-bar-controls .translation-tag,
+  .tab-bar-controls .add-translation {
+    min-height: 28px;
+    min-width: auto;
   }
 }

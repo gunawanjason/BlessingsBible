@@ -1,0 +1,462 @@
+/* Top navigation bar — brand, controls, mobile menu, separator */
+
+.app-nav {
+  background: var(--bg-overlay);
+  border-bottom: 1px solid var(--divider-color);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.nav-content {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-md) clamp(12px, 3vw, 32px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Top row - Brand */
+.nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.app-logo {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.app-title {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* Nav actions group */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Bottom row - Controls */
+.nav-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.nav-primary-controls {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.nav-secondary-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.nav-secondary-controls .translation-switcher {
+  flex: 0 0 auto;
+  order: 2;
+}
+
+.nav-secondary-controls .search-bar {
+  flex: 1 1 0%;
+  min-width: 0;
+  order: 1;
+}
+
+/* Mobile menu toggle */
+.mobile-menu-toggle {
+  display: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.mobile-menu-toggle svg {
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Nav separator */
+.nav-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1040px) {
+  .nav-separator {
+    display: none;
+  }
+}
+
+/* ========== RESPONSIVE BREAKPOINTS ========== */
+
+/* Tablet and below: ≤1040px */
+@media (max-width: 1040px) {
+  :root {
+    --nav-height: 100px;
+  }
+
+  .nav-content {
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-xs);
+    align-items: center;
+  }
+
+  .nav-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+  }
+
+  .nav-brand {
+    flex: none;
+    justify-content: center;
+  }
+
+  .nav-actions {
+    position: absolute;
+    right: 0;
+  }
+
+  .app-logo {
+    height: 24px;
+  }
+
+  .app-title {
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .nav-controls {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .nav-primary-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+  }
+
+  .nav-secondary-controls {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+}
+
+/* Single-row header: 841px–1040px */
+@media (max-width: 1040px) and (min-width: 841px) {
+  .nav-content {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+
+  /* display:contents makes brand and dark-mode button direct flex children
+     of nav-content so order works and button lands at the far right */
+  .nav-top {
+    display: contents;
+  }
+
+  .nav-brand {
+    flex: 0 0 auto;
+    order: 1;
+    gap: var(--spacing-xs);
+  }
+
+  .nav-actions {
+    flex: 0 0 auto;
+    order: 3;
+    position: static; /* override position:absolute from the ≤1040px block */
+  }
+
+  /* Always show controls inline */
+  .nav-controls {
+    display: flex !important;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+    gap: var(--spacing-sm);
+    align-items: center;
+    justify-content: flex-start;
+    order: 2;
+  }
+
+  .nav-primary-controls {
+    flex: 0 0 auto;
+    width: auto; /* override width:100% from the ≤1040px block */
+    min-width: 0;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 0%;
+    min-width: 0;
+    width: auto;
+  }
+}
+
+/* Two-row header: ≤840px */
+@media (max-width: 840px) {
+  .nav-content {
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    gap: var(--spacing-xs);
+  }
+
+  .nav-top {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 0 var(--spacing-sm);
+  }
+
+  .nav-brand {
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+
+  .nav-actions {
+    position: absolute;
+    right: var(--spacing-sm);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+  }
+
+  /* Controls in second row - Stacked on mobile to prevent overflow */
+  .nav-controls {
+    display: flex !important;
+    flex-direction: column;
+    width: 100%;
+    gap: var(--spacing-sm);
+    align-items: stretch;
+    padding: 0 var(--spacing-xs);
+  }
+
+  .nav-primary-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    gap: var(--spacing-sm);
+    width: 100%;
+  }
+}
+
+/* Mobile view: ≤768px */
+@media (max-width: 768px) {
+  .app-logo {
+    height: 22px;
+  }
+}
+
+/* Mobile landscape: ≤768px + landscape - extra compact */
+@media (max-width: 768px) and (orientation: landscape) {
+  :root {
+    --nav-height: 60px;
+  }
+
+  .nav-content {
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
+
+  .nav-brand .app-logo {
+    height: 20px;
+  }
+}
+
+/* Small mobile: ≤480px */
+@media (max-width: 480px) {
+  :root {
+    --nav-height: 76px;
+  }
+
+  .nav-content {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .nav-top {
+    padding: 0 4px;
+  }
+
+  .nav-actions {
+    right: 4px;
+  }
+
+  .nav-controls {
+    gap: 6px;
+    padding: 0 4px;
+    justify-content: flex-start;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .nav-primary-controls {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 45%;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 0%;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .app-logo {
+    height: 20px;
+  }
+
+  .app-title {
+    font-size: 14px;
+  }
+}
+
+/* iPhone SE and similar: ≤375px */
+@media (max-width: 375px) {
+  :root {
+    --nav-height: 74px;
+  }
+
+  .nav-content {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .nav-top {
+    padding: 0 2px;
+  }
+
+  .nav-actions {
+    right: 2px;
+  }
+
+  .nav-controls {
+    gap: 4px;
+    padding: 0 2px;
+    justify-content: flex-start;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 0%;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .app-logo {
+    height: 18px;
+  }
+
+  .app-title {
+    font-size: 13px;
+  }
+}
+
+/* Tiny mobile: ≤360px */
+@media (max-width: 360px) {
+  :root {
+    --nav-height: 72px;
+  }
+
+  .nav-content {
+    padding: 3px 4px;
+    gap: 3px;
+  }
+
+  .nav-controls {
+    gap: 3px;
+    justify-content: flex-start;
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 0%;
+    gap: 3px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .app-logo {
+    height: 17px;
+  }
+
+  .app-title {
+    font-size: 12px;
+  }
+}

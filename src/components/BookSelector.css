@@ -1,4 +1,4 @@
-/* Apple WWDC-style Book Selector */
+/* Book Selector */
 .book-selector {
   display: flex;
   align-items: center;
@@ -11,9 +11,10 @@
   gap: var(--spacing-sm, 8px);
 }
 
-/* Integrated Mode Styles */
+/* Integrated Mode */
 .book-selector.integrated {
-  width: 100%;
+  display: flex;
+  flex-shrink: 0;
 }
 
 .chapter-display-wrapper {
@@ -25,7 +26,6 @@
   justify-content: center;
 }
 
-/* Keep horizontal layout but ensure centering for 640px and lower */
 @media (max-width: 640px) {
   .chapter-display-wrapper {
     justify-content: center;
@@ -33,20 +33,12 @@
   }
 }
 
-/* Make dropdowns flexible only on very small screens (460px and lower) */
 @media (max-width: 460px) {
   .book-dropdown,
   .chapter-dropdown {
     flex: 1;
     min-width: 0;
   }
-}
-
-.chapter-display-container {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  width: 100%;
 }
 
 .chapter-display-button {
@@ -58,47 +50,21 @@
   padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
   cursor: pointer;
   text-align: left;
-  border-radius: var(--radius, 12px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-large, 12px);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
   position: relative;
-  backdrop-filter: saturate(180%) blur(20px);
   box-shadow: var(--shadow-light);
   overflow: hidden;
 }
 
-.chapter-display-button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-}
-
-.chapter-display-button:hover::before {
-  opacity: 0.08;
-}
-
-.chapter-display-button.active::before {
-  opacity: 0.12;
-}
-
 .chapter-display-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
   border-color: var(--primary-color);
 }
 
 .chapter-display-button:active {
-  transform: translateY(0);
+  background: var(--bg-secondary);
 }
 
 .book-title-section {
@@ -110,31 +76,24 @@
 }
 
 .book-title {
-  font-size: clamp(24px, 5vw, 32px);
+  font-family: var(--font-display, "Lora", Georgia, serif);
+  font-size: clamp(22px, 5vw, 28px);
   font-weight: 700;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary, #2c2416);
   margin: 0;
-  letter-spacing: -0.04em;
   line-height: 1.1;
-  transition: all 0.3s ease;
+  transition: color 0.15s ease;
 }
 
 .chapter-display-button:hover .book-title {
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color, #a0782c);
 }
 
 .book-subtitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary, #86868b);
-  opacity: 0.8;
-  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary, #a39882);
   margin-top: var(--spacing-xs, 4px);
-}
-
-.chapter-display-button:hover .book-subtitle {
-  color: var(--primary-color, #007aff);
-  opacity: 1;
 }
 
 .chapter-info-section {
@@ -149,9 +108,9 @@
   display: flex;
   align-items: baseline;
   gap: var(--spacing-xs, 4px);
-  font-size: 16px;
-  color: var(--text-secondary, #86868b);
-  transition: all 0.3s ease;
+  font-size: 15px;
+  color: var(--text-secondary, #7a6e5d);
+  transition: color 0.15s ease;
 }
 
 .chapter-label {
@@ -160,59 +119,56 @@
 
 .chapter-number {
   font-weight: 700;
-  font-size: 18px;
-  color: var(--text-primary, #1d1d1f);
+  font-size: 17px;
+  color: var(--text-primary, #2c2416);
 }
 
 .chapter-total {
   font-weight: 400;
 }
 
-.chapter-display-button:hover .chapter-info {
-  color: var(--primary-color, #007aff);
-}
-
+.chapter-display-button:hover .chapter-info,
 .chapter-display-button:hover .chapter-number {
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color, #a0782c);
 }
 
 .chapter-subtitle {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary, #86868b);
-  opacity: 0.8;
-  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary, #a39882);
   margin-top: var(--spacing-xs, 4px);
-}
-
-.chapter-display-button:hover .chapter-subtitle {
-  color: var(--primary-color, #007aff);
-  opacity: 1;
 }
 
 .chapter-nav-btn {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  width: 26px !important; /* Force smaller size */
-  height: 26px !important; /* Force smaller size */
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary-color);
-  font-size: 14px !important; /* Force smaller font */
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   user-select: none;
+}
+
+/* Touch device: ensure nav buttons are 44px */
+@media (pointer: coarse) {
+  .chapter-nav-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .chapter-nav-btn:hover {
   background: var(--primary-color);
   color: white;
-  transform: scale(1.05);
 }
 
 .chapter-nav-btn:focus {
@@ -223,14 +179,7 @@
 .chapter-nav-btn.disabled {
   opacity: 0.3;
   cursor: not-allowed;
-  transform: none;
   pointer-events: none;
-}
-
-.chapter-nav-btn.disabled:hover {
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-  transform: none;
 }
 
 .clickable-indicator {
@@ -240,20 +189,19 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 122, 255, 0.1);
-  transition: all 0.3s ease;
+  background: var(--primary-light, rgba(160, 120, 44, 0.12));
+  transition: background-color 0.15s ease;
 }
 
 .chapter-display-button:hover .clickable-indicator {
-  background: var(--primary-color, #007aff);
-  transform: scale(1.1);
+  background: var(--primary-color, #a0782c);
 }
 
 .chevron-icon {
   width: 12px;
   height: 12px;
-  color: var(--primary-color, #007aff);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--primary-color, #a0782c);
+  transition: transform 0.2s ease;
 }
 
 .chapter-display-button:hover .chevron-icon {
@@ -265,11 +213,7 @@
   transform: rotate(180deg);
 }
 
-.chapter-display-button.active:hover .chevron-icon {
-  color: white;
-}
-
-/* Compact Selector Buttons for Header */
+/* Compact Selector Buttons */
 .selector-button {
   display: flex;
   align-items: center;
@@ -277,23 +221,22 @@
   padding: 6px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 14px;
   font-weight: 500;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
   position: relative;
   white-space: nowrap;
 }
 
 .selector-button:hover {
-  background: var(--primary-color);
-  color: white;
-}
-
-.selector-button:active {
-  transform: scale(0.98);
+  background: var(--bg-secondary);
+  color: var(--primary-color);
 }
 
 .button-text {
@@ -302,8 +245,7 @@
 
 .button-icon {
   font-size: 14px;
-  color: var(--text-secondary, #86868b);
-  transform: rotate(0deg);
+  color: var(--text-secondary);
   transition: transform 0.2s ease;
 }
 
@@ -311,80 +253,66 @@
   transform: rotate(90deg);
 }
 
-/* Enhanced Dropdown Menus */
+/* Dropdown Menus */
 .dropdown-menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: var(--bg-overlay);
+  background: var(--bg-primary);
   border-radius: var(--radius-large);
   box-shadow: var(--shadow-heavy);
   border: 1px solid var(--border-color);
-  max-height: 70vh; /* Increased from 60vh for larger dropdowns */
-  min-width: 320px; /* Minimum width for better usability */
-  overflow-y: auto; /* Enable vertical scrolling */
+  max-height: 70vh;
+  min-width: 300px;
+  overflow-y: auto;
   z-index: 1000;
-  backdrop-filter: saturate(180%) blur(20px);
-  animation: dropdownAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: dropdownAppear 0.2s ease-out;
 }
 
-/* Chapter dropdown should size to content */
 .chapters-menu {
   right: auto;
   width: auto;
-  min-width: 280px;
-  max-width: 400px;
+  min-width: 260px;
+  max-width: 380px;
 }
 
-/* Mobile-specific dropdown adjustments */
 @media (max-width: 1040px) {
   .dropdown-menu {
-    max-height: 60vh; /* Increased height for better usability */
-    min-width: 280px;
-    left: 0; /* Align with parent's left edge */
-    max-width: calc(
-      100vw - (var(--spacing-md, 16px) * 2)
-    ); /* Prevent overflow from viewport */
-    box-sizing: border-box; /* Ensure padding/border are included in width/max-width */
-    overflow-y: auto; /* Ensure scrolling works on mobile */
-    overflow-x: hidden; /* Prevent horizontal scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-  }
-
-  .chapters-menu {
-    max-height: 60vh; /* Consistent mobile height */
+    max-height: 60vh;
+    min-width: 260px;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Ensure dropdown content is scrollable */
-  .dropdown-content {
-    max-height: none; /* Remove height restriction on content */
-    overflow-y: visible; /* Let parent handle scrolling */
+  .chapters-menu {
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 @keyframes dropdownAppear {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.95);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-@keyframes dropdownAppearMobile {
+@keyframes slideUpSheet {
   from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-8px) scale(0.95);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
@@ -393,7 +321,6 @@
   position: relative;
 }
 
-/* Horizontal layout for integrated mode */
 .book-selector.integrated .book-dropdown {
   flex: none;
 }
@@ -404,46 +331,56 @@
   flex: none;
 }
 
-/* Ensure equal height for horizontal dropdowns */
 .book-selector.integrated .chapter-display-button {
-  height: 100%;
-  min-height: 70px; /* Further reduced from 80px */
-  padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px); /* Further reduced padding */
-  justify-content: space-between; /* Distribute content evenly */
+  height: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  justify-content: center;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Smaller fonts for horizontal layout */
 .book-selector.integrated .book-title {
-  font-size: clamp(
-    16px,
-    3.5vw,
-    20px
-  ); /* Further reduced from clamp(18px, 4vw, 24px) */
+  font-size: 15px;
+  font-weight: 600;
 }
 
-.book-selector.integrated .book-subtitle {
-  font-size: 10px; /* Reduced from 11px */
-}
-
+.book-selector.integrated .book-subtitle,
 .book-selector.integrated .chapter-subtitle {
-  font-size: 9px; /* Reduced from 10px */
+  display: none;
+}
+
+.book-selector.integrated .book-title-section {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.book-selector.integrated .chapter-info-section {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
 }
 
 .book-selector.integrated .chapter-info {
-  font-size: 12px; /* Reduced from 14px */
-  white-space: nowrap; /* Prevent text wrapping */
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .book-selector.integrated .chapter-number {
-  font-size: 14px; /* Reduced from 16px */
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .book-selector.integrated .chapter-label,
 .book-selector.integrated .chapter-total {
-  font-size: 10px; /* Reduced from 12px */
+  font-size: 12px;
 }
 
-/* Center book selector on tablet and mobile */
+/* Center on tablet/mobile */
 @media (max-width: 1040px) and (min-width: 768px) {
   .chapter-display-wrapper {
     justify-content: center;
@@ -454,12 +391,7 @@
     justify-content: center;
   }
 
-  .book-dropdown {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
+  .book-dropdown,
   .chapter-dropdown {
     display: flex;
     justify-content: center;
@@ -467,11 +399,12 @@
   }
 }
 
-/* Center book selector on mobile */
 @media (max-width: 768px) {
   .chapter-display-wrapper {
     justify-content: center;
-    gap: var(--spacing-xs, 4px); /* Reduce gap between elements */
+    gap: var(--spacing-xs, 4px);
+    flex-direction: row;
+    flex-wrap: nowrap;
   }
 
   .book-selector.integrated {
@@ -479,91 +412,56 @@
     justify-content: center;
   }
 
-  .book-dropdown {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
+  .book-dropdown,
   .chapter-dropdown {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: static;
   }
 
-  /* Make buttons more compact on mobile */
   .book-selector.integrated .chapter-display-button {
-    min-height: 60px; /* Reduced from 70px */
-    padding: var(--spacing-xs, 4px) var(--spacing-xs, 4px); /* Even smaller padding */
+    height: 40px;
+    min-height: 40px;
+    padding: 0 10px;
   }
 
   .book-selector.integrated .book-title {
-    font-size: clamp(
-      14px,
-      3vw,
-      18px
-    ); /* More aggressive reduction for mobile */
+    font-size: 14px;
+  }
+
+  .book-selector.integrated .book-subtitle,
+  .book-selector.integrated .chapter-subtitle {
+    display: none;
   }
 
   .book-selector.integrated .chapter-info {
-    font-size: 11px; /* Reduced from 12px */
+    font-size: 12px;
   }
 
   .book-selector.integrated .chapter-number {
-    font-size: 13px; /* Reduced from 14px */
-  }
-
-  /* Make chapter navigation buttons more compact on mobile */
-  .chapter-nav-btn {
-    width: 22px !important; /* Further reduced for mobile */
-    height: 22px !important; /* Further reduced for mobile */
-    font-size: 12px !important; /* Reduced font size */
-  }
-
-  /* Very small mobile screens - maximum compactness */
-  @media (max-width: 480px) {
-    .book-selector.integrated .chapter-display-button {
-      min-height: 50px; /* Further reduced for smallest screens */
-      padding: 2px 4px; /* Minimal padding */
-    }
-
-    .book-selector.integrated .book-title {
-      font-size: clamp(12px, 2.5vw, 16px); /* Very compact for small screens */
-    }
-
-    .book-selector.integrated .book-subtitle,
-    .book-selector.integrated .chapter-subtitle {
-      font-size: 8px; /* Very small subtitle text */
-    }
-
-    .book-selector.integrated .chapter-info {
-      font-size: 10px; /* Reduced info text */
-    }
-
-    .book-selector.integrated .chapter-number {
-      font-size: 12px; /* Compact chapter number */
-    }
-
-    .book-selector.integrated .chapter-label,
-    .book-selector.integrated .chapter-total {
-      font-size: 8px; /* Very small label text */
-    }
-
-    .chapter-display-wrapper {
-      gap: 2px; /* Minimal gap between book and chapter selectors */
-    }
-
-    /* Even smaller chapter nav buttons for very small screens */
-    .chapter-nav-btn {
-      width: 20px !important; /* Very compact for smallest screens */
-      height: 20px !important; /* Very compact for smallest screens */
-      font-size: 10px !important; /* Smaller font for tiny screens */
-    }
+    font-size: 14px;
   }
 
   .book-selector.integrated .chapter-label,
   .book-selector.integrated .chapter-total {
-    font-size: 9px; /* Reduced from 10px */
+    font-size: 10px;
+  }
+
+  .chapter-nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .book-selector.integrated .clickable-indicator {
+    width: 18px;
+    height: 18px;
+  }
+
+  .book-selector.integrated .chevron-icon {
+    width: 9px;
+    height: 9px;
   }
 }
 
@@ -578,11 +476,11 @@
 }
 
 .menu-header h3 {
-  font-size: 18px;
+  font-family: var(--font-display, "Lora", Georgia, serif);
+  font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary, #2c2416);
   margin: 0;
-  letter-spacing: -0.02em;
 }
 
 .close-button {
@@ -595,123 +493,214 @@
   border: 1px solid var(--border-color);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
   color: var(--text-secondary);
 }
 
 .close-button:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.05);
+  background: var(--bg-secondary);
+}
+
+/* Book Search */
+.book-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--divider-color);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.book-search-container .search-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.book-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  outline: none;
+  min-width: 0;
+}
+
+.book-search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-clear {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: var(--border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease;
+}
+
+.search-clear:hover {
+  background: var(--text-tertiary);
+  color: var(--bg-primary);
+}
+
+.search-clear svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Scrollable books container */
+.books-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky section headers */
+.section-header.sticky-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+  z-index: 2;
+  padding: 10px 16px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--divider-color);
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--divider-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.section-header.sticky-header:hover {
+  background: var(--border-color);
+}
+
+.section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-header-left::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  background: var(--primary-color, #a0782c);
+  border-radius: 2px;
+}
+
+.section-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.section-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.section-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+/* No results message */
+.no-results {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.no-results p {
+  margin: 0;
+  font-size: 14px;
 }
 
 .close-button svg {
   width: 14px;
   height: 14px;
-  color: var(--text-secondary, #86868b);
-}
-
-.dropdown-menu .dropdown-content {
-  max-height: none; /* Remove height restriction to let parent handle scrolling */
-  overflow-y: visible; /* Let parent dropdown-menu handle the scrolling */
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Testament Sections */
 .testament-section {
-  padding: var(--spacing-lg, 24px);
+  padding: 0;
 }
 
 .testament-section:not(:last-child) {
-  border-bottom: 1px solid var(--divider-color, #e5e5ea);
+  border-bottom: none;
 }
 
 .section-header {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--text-secondary, #86868b);
+  color: var(--text-secondary, #7a6e5d);
   text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: var(--spacing-md, 16px);
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm, 8px);
 }
 
-.section-header::before {
-  content: "";
-  width: 3px;
-  height: 12px;
-  background: var(--primary-color, #007aff);
-  border-radius: 2px;
-}
-
 /* Books List */
 .books-list {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(160px, 1fr)
-  ); /* Increased from 140px */
-  gap: var(--spacing-sm, 8px); /* Increased from 4px */
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  padding: 8px 12px 16px;
 }
 
 .book-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px); /* Increased padding */
+  padding: 10px 12px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius, 12px);
-  font-size: 16px; /* Increased from 14px */
+  border-radius: var(--radius);
+  font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary, #1d1d1f);
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
+  color: var(--text-primary, #2c2416);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   text-align: left;
-  position: relative;
-  overflow: hidden;
-  min-height: 48px; /* Added minimum height for better touch targets */
-}
-
-.book-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: -1;
-}
-
-.book-item:hover::before {
-  opacity: 0.08;
+  min-height: 40px;
 }
 
 .book-item:hover {
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-light);
+  background: var(--bg-secondary);
 }
 
 .book-item.active {
-  background: var(--primary-color, #007aff);
+  background: var(--primary-color, #a0782c);
   color: white;
   font-weight: 600;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
-}
-
-.book-item.active::before {
-  opacity: 0;
 }
 
 .book-name {
@@ -722,11 +711,14 @@
   width: 16px;
   height: 16px;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
   transform: scale(0.8);
 }
 
-.book-item.active .check-icon {
+.book-item.active .check-icon,
+.chapter-item.active .check-icon {
   opacity: 1;
   transform: scale(1);
 }
@@ -734,18 +726,15 @@
 /* Chapters Grid */
 .chapters-menu {
   max-height: 70vh;
-  overflow-y: auto; /* Enable scrolling for chapters */
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .chapters-grid {
   display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(56px, 1fr)
-  ); /* Increased from 48px */
-  gap: var(--spacing-sm, 8px); /* Increased from 4px */
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: var(--spacing-sm, 8px);
   padding: var(--spacing-lg, 24px);
 }
 
@@ -757,54 +746,25 @@
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius, 12px);
-  font-size: 16px; /* Increased from 14px */
+  border-radius: var(--radius);
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary, #2c2416);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 56px; /* Increased from 48px for better touch targets */
-  position: relative;
-  overflow: hidden;
-}
-
-.chapter-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: -1;
-}
-
-.chapter-item:hover::before {
-  opacity: 0.08;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+  min-height: 52px;
 }
 
 .chapter-item:hover {
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-light);
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 
 .chapter-item.active {
-  background: var(--primary-color, #007aff);
+  background: var(--primary-color, #a0782c);
   color: white;
-  font-weight: 700;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
-}
-
-.chapter-item.active::before {
-  opacity: 0;
 }
 
 .chapter-text {
@@ -815,16 +775,9 @@
   width: 12px;
   height: 12px;
   opacity: 0;
-  transition: all 0.2s ease;
-  transform: scale(0.8);
 }
 
-.chapter-item.active .check-icon {
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* Mobile Adjustments */
+/* Mobile */
 @media (max-width: 768px) {
   .chapter-display-wrapper {
     gap: var(--spacing-xs, 4px);
@@ -834,12 +787,11 @@
   .chapter-display-button {
     padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
     min-height: 60px;
-    border-radius: 10px;
+    border-radius: var(--radius);
   }
 
   .book-title {
     font-size: clamp(16px, 4vw, 20px);
-    line-height: 1.2;
   }
 
   .book-subtitle,
@@ -862,71 +814,134 @@
   }
 
   .chevron-icon {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
+  /* Bottom sheet style dropdown on mobile */
   .dropdown-menu {
-    position: absolute; /* Changed from fixed */
-    top: calc(100% + var(--spacing-xs, 4px)); /* Position below the parent */
-    left: 0; /* Align with parent's left edge */
-    right: auto; /* Let width be determined by content or max-width */
-    width: auto;
-    min-width: 280px; /* Minimum width for usability */
-    max-width: calc(
-      100vw - var(--spacing-md, 16px) * 2
-    ); /* Prevent overflow from viewport, leave some space */
-    transform: none; /* Remove previous centering transform */
-    max-height: 70vh; /* Increased max-height for mobile */
-    border-radius: var(--radius-large, 16px); /* Consistent with desktop */
-    box-shadow: var(--shadow-heavy); /* Consistent with desktop */
-    border: 1px solid var(--border-color); /* Use CSS variable for dark mode */
-    background: var(--bg-overlay); /* Use CSS variable for dark mode */
-    backdrop-filter: saturate(180%) blur(20px); /* Consistent with desktop */
-    z-index: 1000; /* Ensure it's on top */
-    overflow-y: auto; /* Enable scrolling */
-    overflow-x: hidden; /* Prevent horizontal scrolling */
-    box-sizing: border-box; /* Include padding/border in width/height */
-    -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    transform: none;
+    max-height: 80vh;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    border: none;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    z-index: 1001;
+    overflow: hidden;
+    box-sizing: border-box;
+    animation: slideUpSheet 0.25s ease-out;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background-color: var(--divider-color);
+    border-radius: 2px;
+    z-index: 1;
   }
 
   .menu-header {
-    padding: var(--spacing-md, 16px);
+    padding: 20px 16px 12px;
+    border-bottom: 1px solid var(--divider-color);
+    flex-shrink: 0;
   }
 
   .menu-header h3 {
-    font-size: 16px;
+    font-size: 17px;
+    margin-top: 4px;
+  }
+
+  /* Search bar adjustments for mobile */
+  .book-search-container {
+    padding: 10px 16px;
+    flex-shrink: 0;
+  }
+
+  .book-search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Scrollable content area */
+  .books-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
   }
 
   .testament-section {
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    padding: 0;
   }
 
-  .section-header {
-    font-size: 11px;
-    margin-bottom: var(--spacing-sm, 8px);
+  .section-header.sticky-header {
+    padding: 10px 16px;
+    font-size: 10px;
+  }
+
+  .section-header-left {
+    gap: 6px;
+  }
+
+  .section-chevron {
+    width: 14px;
+    height: 14px;
   }
 
   .books-list {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: var(--spacing-xs, 4px);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 8px 12px 12px;
   }
 
   .book-item {
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-    font-size: 14px;
+    padding: 10px 8px;
+    font-size: 13px;
     min-height: 44px;
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .book-item .book-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .book-item .check-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
 
   .chapters-menu {
-    max-height: 70vh; /* Ensure chapters menu has proper height on mobile */
-    overflow-y: auto; /* Enable scrolling for chapters on mobile */
-    overflow-x: hidden; /* Prevent horizontal scrolling */
-    -webkit-overflow-scrolling: touch; /* Smooth iOS scrolling */
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
   }
 
   .chapters-grid {
-    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    grid-template-columns: repeat(6, 1fr);
     padding: var(--spacing-md, 16px);
     gap: var(--spacing-xs, 4px);
   }
@@ -934,185 +949,279 @@
   .chapter-item {
     min-height: 44px;
     font-size: 14px;
-    border-radius: 10px;
   }
 }
 
 @media (max-width: 480px) {
   .chapter-display-wrapper {
-    flex-direction: column;
-    gap: var(--spacing-xs, 4px);
+    flex-direction: row;
+    gap: 0;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .book-selector.integrated {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .book-dropdown,
   .chapter-dropdown {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
   }
 
-  .chapter-display-button {
-    min-height: 50px;
-    padding: var(--spacing-xs, 4px);
+  /* Remove border-radius on adjacent edges for flush appearance */
+  .book-selector.integrated .book-selector-btn {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
   }
 
-  .book-title {
-    font-size: clamp(14px, 4vw, 18px);
+  .book-selector.integrated .chapter-selector-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .book-selector.integrated .chapter-display-button {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 6px;
+    gap: 4px;
+  }
+
+  .book-selector.integrated .book-title {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70px;
   }
 
   .book-subtitle,
   .chapter-subtitle {
-    font-size: 9px;
+    display: none;
   }
 
-  .chapter-info {
+  .book-selector.integrated .chapter-info {
     font-size: 11px;
   }
 
-  .chapter-number {
-    font-size: 13px;
+  .book-selector.integrated .chapter-number {
+    font-size: 12px;
   }
 
+  /* Hide "Chapter" and "of N" to save space */
+  .book-selector.integrated .chapter-label,
+  .book-selector.integrated .chapter-total {
+    display: none;
+  }
+
+  .chapter-nav-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .book-selector.integrated .clickable-indicator {
+    width: 14px;
+    height: 14px;
+  }
+
+  .book-selector.integrated .chevron-icon {
+    width: 7px;
+    height: 7px;
+  }
+
+  /* Keep bottom sheet style, just adjust height */
   .dropdown-menu {
-    width: 95vw;
-    max-width: 95vw;
-    box-sizing: border-box;
-    max-height: 65vh; /* Aggressively reduced max-height */
-    left: 50%;
-    transform: translateX(-50%);
-    right: auto;
-    top: 100%; /* Position directly below the trigger */
-    padding-top: var(--spacing-xs, 4px); /* Add some top padding */
-    padding-bottom: var(--spacing-xs, 4px); /* Add some bottom padding */
-    overflow-y: auto !important; /* Ensure vertical scrolling, !important as a last resort */
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    animation: dropdownAppearMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-left: auto;
-    margin-right: auto;
+    max-height: 75vh;
+  }
+
+  .books-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chapters-grid {
+    grid-template-columns: repeat(5, 1fr);
   }
 
   .chapters-menu {
-    max-height: calc(
-      65vh - 40px
-    ); /* Account for header/padding in dropdown, adjust 40px as needed */
-
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    max-height: calc(75vh - 60px);
     overscroll-behavior: contain;
   }
 }
 
-@media (max-width: 360px) {
-  .chapter-display-button {
-    min-height: 44px;
-    padding: var(--spacing-xs, 4px);
+/* Hide compact display by default */
+.chapter-compact-display {
+  display: none;
+}
+
+/* Small viewports: ≤480px - hide nav buttons, show X/Y format */
+@media (max-width: 480px) {
+  /* Hide the < > navigation buttons */
+  .book-selector.integrated .chapter-nav-btn {
+    display: none;
   }
 
-  .book-title {
-    font-size: clamp(12px, 4vw, 16px);
+  /* Hide "Chapter" label and "of X" text */
+  .book-selector.integrated .chapter-label,
+  .book-selector.integrated .chapter-total,
+  .book-selector.integrated .chapter-number {
+    display: none;
+  }
+
+  /* Show compact X/Y display */
+  .book-selector.integrated .chapter-compact-display {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 1px;
+    font-size: 13px;
+  }
+
+  .book-selector.integrated .chapter-compact-display .current-chapter {
+    font-weight: 700;
+    color: var(--primary-color, #a0782c);
+    font-size: 14px;
+  }
+
+  .book-selector.integrated .chapter-compact-display .chapter-separator {
+    font-weight: 400;
+    color: var(--text-tertiary, #a39882);
+    font-size: 12px;
+  }
+
+  .book-selector.integrated .chapter-compact-display .total-chapters {
+    font-weight: 500;
+    color: var(--text-secondary, #7a6e5d);
+    font-size: 12px;
+  }
+
+  /* Hover effect on chapter button */
+  .book-selector.integrated
+    .chapter-selector-btn:hover
+    .chapter-compact-display
+    .current-chapter {
+    color: var(--primary-dark, #8a6525);
+  }
+}
+
+/* iPhone SE and similar: ≤375px */
+@media (max-width: 375px) {
+  .chapter-display-wrapper {
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .book-selector.integrated {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .book-selector.integrated .chapter-display-button {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 8px;
+    gap: 4px;
+  }
+
+  .book-selector.integrated .book-title {
+    font-size: 12px;
+    max-width: 70px;
+  }
+
+  .book-selector.integrated .chapter-compact-display .current-chapter {
+    font-size: 13px;
+  }
+
+  .book-selector.integrated .chapter-compact-display .chapter-separator,
+  .book-selector.integrated .chapter-compact-display .total-chapters {
+    font-size: 11px;
+  }
+
+  .book-selector.integrated .clickable-indicator {
+    width: 14px;
+    height: 14px;
+  }
+
+  .book-selector.integrated .chevron-icon {
+    width: 7px;
+    height: 7px;
+  }
+}
+
+@media (max-width: 360px) {
+  .chapter-display-wrapper {
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .book-selector.integrated {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .book-selector.integrated .chapter-display-button {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 6px;
+    gap: 3px;
+  }
+
+  .book-selector.integrated .book-title {
+    font-size: 11px;
+    max-width: 60px;
   }
 
   .book-subtitle,
   .chapter-subtitle {
-    font-size: 8px;
+    display: none;
   }
 
-  .chapter-info {
-    font-size: 10px;
-  }
-
-  .chapter-number {
+  .book-selector.integrated .chapter-compact-display .current-chapter {
     font-size: 12px;
   }
 
-  .clickable-indicator {
-    width: 16px;
-    height: 16px;
+  .book-selector.integrated .chapter-compact-display .chapter-separator,
+  .book-selector.integrated .chapter-compact-display .total-chapters {
+    font-size: 10px;
   }
 
-  .chevron-icon {
+  .book-selector.integrated .clickable-indicator {
+    width: 12px;
+    height: 12px;
+  }
+
+  .book-selector.integrated .chevron-icon {
     width: 6px;
     height: 6px;
   }
 
+  /* Keep bottom sheet, adjust for smaller screens */
   .dropdown-menu {
-    width: calc(100vw - 2 * var(--spacing-xs, 4px));
-    max-width: calc(100vw - 2 * var(--spacing-xs, 4px));
-    margin-left: var(--spacing-xs, 4px);
-    margin-right: var(--spacing-xs, 4px);
-    box-sizing: border-box;
-    max-height: 60vh; /* Aggressively reduced max-height */
-    padding-top: var(--spacing-xs, 4px);
-    padding-bottom: var(--spacing-xs, 4px);
-    overflow-y: auto !important; /* Ensure vertical scrolling, !important as a last resort */
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    top: 100%; /* Position directly below the trigger */
-    left: 50%;
-    transform: translateX(-50%);
+    max-height: 70vh;
+  }
+
+  .chapters-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .chapters-menu {
-    max-height: calc(
-      60vh - 30px
-    ); /* Account for header/padding in dropdown, adjust 30px as needed */
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    max-height: calc(70vh - 60px);
     overscroll-behavior: contain;
-  }
-
-  .chapter-display-button {
-    min-height: 44px;
-    padding: var(--spacing-xs, 4px);
-  }
-
-  .book-title {
-    font-size: clamp(12px, 4vw, 16px);
-  }
-
-  .book-subtitle,
-  .chapter-subtitle {
-    font-size: 8px;
-  }
-
-  .chapter-info {
-    font-size: 10px;
-  }
-
-  .chapter-number {
-    font-size: 12px;
-  }
-
-  .clickable-indicator {
-    width: 16px;
-    height: 16px;
-  }
-
-  .chevron-icon {
-    width: 6px;
-    height: 6px;
-  }
-
-  .dropdown-menu {
-    width: calc(100vw - 2 * var(--spacing-xs, 4px));
-    max-width: calc(100vw - 2 * var(--spacing-xs, 4px));
-    margin-left: var(--spacing-xs, 4px);
-    margin-right: var(--spacing-xs, 4px);
-    box-sizing: border-box;
-    max-height: 60vh; /* Aggressively reduced max-height */
-    padding-top: var(--spacing-xs, 4px);
-    padding-bottom: var(--spacing-xs, 4px);
-    overflow-y: auto !important; /* Ensure vertical scrolling */
   }
 }

@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import PropTypes from "prop-types";
 import "./SyncControls.css";
 
@@ -8,8 +9,12 @@ const SyncControls = ({
   onRemoveTranslation,
   syncEnabled,
   onToggleSync,
+  maxTranslations = 4,
 }) => {
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [menuCoords, setMenuCoords] = useState(null);
+  const addBtnRef = useRef(null);
+
   const availableTranslations = [
     "TB",
     "KJV",
@@ -24,25 +29,81 @@ const SyncControls = ({
     "CUV",
   ];
 
-  // Filter out already selected translations
   const filteredTranslations = availableTranslations.filter(
-    (t) => !translations.includes(t)
+    (t) => !translations.includes(t),
   );
+  const atMax = translations.length >= maxTranslations;
+
+  const handleToggleMenu = useCallback(() => {
+    if (!showAddMenu && addBtnRef.current) {
+      const rect = addBtnRef.current.getBoundingClientRect();
+      setMenuCoords(rect);
+    }
+    setShowAddMenu((prev) => !prev);
+  }, [showAddMenu]);
 
   const handleAddClick = useCallback(
     (translation) => {
       onAddTranslation(translation);
       setShowAddMenu(false);
     },
-    [onAddTranslation]
+    [onAddTranslation],
   );
 
   const handleRemoveClick = useCallback(
     (translation) => {
       onRemoveTranslation(translation);
     },
-    [onRemoveTranslation]
+    [onRemoveTranslation],
   );
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showAddMenu) return;
+    const handler = (e) => {
+      if (
+        addBtnRef.current &&
+        !addBtnRef.current.contains(e.target) &&
+        !e.target.closest(".translation-menu")
+      ) {
+        setShowAddMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, [showAddMenu]);
+
+  // Portal dropdown — escapes any overflow:auto container
+  const menu =
+    showAddMenu && menuCoords
+      ? ReactDOM.createPortal(
+          <div
+            className="translation-menu"
+            style={{
+              position: "fixed",
+              // Open downward from the button's bottom edge
+              top: `${menuCoords.bottom + 4}px`,
+              left: `${Math.min(menuCoords.left, window.innerWidth - 150)}px`,
+              zIndex: 2000,
+            }}
+          >
+            {filteredTranslations.map((translation) => (
+              <button
+                key={translation}
+                className="menu-item"
+                onClick={() => handleAddClick(translation)}
+              >
+                {translation}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="sync-controls">
@@ -58,13 +119,11 @@ const SyncControls = ({
         >
           <svg viewBox="0 0 24 24" fill="currentColor">
             {syncEnabled ? (
-              // Sync enabled: Two connected arrows in a circle
               <g>
                 <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
                 <path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8 8-8z" />
               </g>
             ) : (
-              // Sync disabled: Broken/disconnected arrows
               <g>
                 <path
                   d="M4 12l1.41 1.41L11 7.83V14h2V7.83l5.58 5.59L20 12l-8-8-8 8z"
@@ -108,29 +167,17 @@ const SyncControls = ({
           </button>
         ))}
 
-        {filteredTranslations.length > 0 && (
+        {filteredTranslations.length > 0 && !atMax && (
           <div className="add-translation-container">
             <button
+              ref={addBtnRef}
               className="add-translation"
-              onClick={() => setShowAddMenu(!showAddMenu)}
+              onClick={handleToggleMenu}
               title="Add translation"
             >
               + Add
             </button>
-
-            {showAddMenu && (
-              <div className="translation-menu">
-                {filteredTranslations.map((translation) => (
-                  <button
-                    key={translation}
-                    className="menu-item"
-                    onClick={() => handleAddClick(translation)}
-                  >
-                    {translation}
-                  </button>
-                ))}
-              </div>
-            )}
+            {menu}
           </div>
         )}
       </div>
@@ -146,4 +193,5 @@ SyncControls.propTypes = {
   onRemoveTranslation: PropTypes.func.isRequired,
   syncEnabled: PropTypes.bool.isRequired,
   onToggleSync: PropTypes.func.isRequired,
+  maxTranslations: PropTypes.number,
 };

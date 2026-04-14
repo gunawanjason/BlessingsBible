@@ -5,8 +5,11 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
-import { getBookName } from "../utils/translationMappings";
+import {
+  fetchChapterCached,
+  fetchHeadingsCached,
+  hasCachedChapter,
+} from "../services/bibleApi";
 import ScrollToTop from "./ScrollToTop";
 import "./ChapterReader.css";
 
@@ -18,14 +21,20 @@ const ChapterReader = ({
   selectedTranslation,
   selectedVerses,
   setSelectedVerses,
+  chapterVersesRef,
 }) => {
   const [chapterVerses, setChapterVerses] = useState([]);
   const [headings, setHeadings] = useState([]);
-  const [loading, setLoading] = useState(false);
+  // Initialize loading=true so the "No verses found" fallback never flashes
+  // during the 150ms before the skeleton-show timer fires on initial mount.
+  const [loading, setLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const [error, setError] = useState(null);
-  const [copyState, setCopyState] = useState("idle"); // 'idle', 'copying', 'copied'
   const versesContainerRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const fetchIdRef = useRef(0);
+  const skeletonDelayRef = useRef(null);
+  const skeletonShownAtRef = useRef(null);
 
   // Memoize current book calculation
   const currentBook = useMemo(
@@ -33,7 +42,10 @@ const ChapterReader = ({
     [bibleStructure, selectedBook],
   );
 
-  const totalChapters = currentBook?.chapters || 0;
+  // Skeleton timing: delay showing to avoid flash on fast loads,
+  // and enforce a minimum visible duration once it does appear.
+  const SKELETON_SHOW_DELAY = 150;
+  const SKELETON_MIN_VISIBLE = 300;
 
   // Optimized fetch function with abort controller
   const fetchChapterVerses = useCallback(async () => {
@@ -43,45 +55,105 @@ const ChapterReader = ({
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    if (skeletonDelayRef.current) {
+      clearTimeout(skeletonDelayRef.current);
+      skeletonDelayRef.current = null;
+    }
 
-    // Create new abort controller
+    // Create new abort controller and fetch id
     abortControllerRef.current = new AbortController();
+    const fetchId = ++fetchIdRef.current;
 
     setLoading(true);
     setError(null);
 
+    // When the chapter is already cached, skip the flash-avoidance delay and
+    // show the skeleton right away so users see the same loading affordance
+    // on every navigation — then let the min-visible timer gate the render.
+    const cacheHit = hasCachedChapter(
+      selectedTranslation,
+      selectedBook,
+      selectedChapter,
+    );
+
+    skeletonShownAtRef.current = null;
+    if (cacheHit) {
+      skeletonShownAtRef.current = Date.now();
+      setShowSkeleton(true);
+    } else {
+      skeletonDelayRef.current = setTimeout(() => {
+        if (fetchIdRef.current === fetchId) {
+          skeletonShownAtRef.current = Date.now();
+          setShowSkeleton(true);
+        }
+      }, SKELETON_SHOW_DELAY);
+    }
+
     try {
-      // Use our new API service to fetch the entire chapter
-      const chapterReference = `${selectedBook} ${selectedChapter}`;
-
-      const [verses, headingsData] = await Promise.all([
-        fetchMultipleVerses(selectedTranslation, chapterReference),
-        fetchHeadings(selectedTranslation, selectedBook, selectedChapter),
+      const [versesRes, headingsRes] = await Promise.all([
+        fetchChapterCached(selectedTranslation, selectedBook, selectedChapter),
+        fetchHeadingsCached(selectedTranslation, selectedBook, selectedChapter),
       ]);
+      const verses = versesRes.data;
+      const headingsData = headingsRes.data;
 
-      // Check if request was aborted
-      if (abortControllerRef.current?.signal.aborted) {
+      if (
+        abortControllerRef.current?.signal.aborted ||
+        fetchIdRef.current !== fetchId
+      ) {
         return;
       }
 
-      // Transform the verses to match the expected format
       const transformedVerses = verses.map((verse) => ({
         verse: verse.verse,
         text: verse.text,
       }));
 
-      setChapterVerses(transformedVerses);
-      setHeadings(headingsData);
+      const applyData = () => {
+        if (fetchIdRef.current !== fetchId) return;
+        setChapterVerses(transformedVerses);
+        setHeadings(headingsData);
+        setShowSkeleton(false);
+        skeletonShownAtRef.current = null;
+      };
+
+      // If skeleton never showed (fast load), cancel the pending show
+      // and render immediately. If it did show, keep it up long enough
+      // to avoid flicker.
+      if (skeletonShownAtRef.current === null) {
+        if (skeletonDelayRef.current) {
+          clearTimeout(skeletonDelayRef.current);
+          skeletonDelayRef.current = null;
+        }
+        applyData();
+      } else {
+        const elapsed = Date.now() - skeletonShownAtRef.current;
+        const remaining = Math.max(0, SKELETON_MIN_VISIBLE - elapsed);
+        if (remaining === 0) {
+          applyData();
+        } else {
+          setTimeout(applyData, remaining);
+        }
+      }
     } catch (err) {
       if (
         err.name !== "AbortError" &&
-        !abortControllerRef.current?.signal.aborted
+        !abortControllerRef.current?.signal.aborted &&
+        fetchIdRef.current === fetchId
       ) {
         setError(err.message);
         setChapterVerses([]);
+        if (skeletonDelayRef.current) {
+          clearTimeout(skeletonDelayRef.current);
+          skeletonDelayRef.current = null;
+        }
+        setShowSkeleton(false);
       }
     } finally {
-      if (!abortControllerRef.current?.signal.aborted) {
+      if (
+        !abortControllerRef.current?.signal.aborted &&
+        fetchIdRef.current === fetchId
+      ) {
         setLoading(false);
       }
     }
@@ -95,16 +167,19 @@ const ChapterReader = ({
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      if (skeletonDelayRef.current) {
+        clearTimeout(skeletonDelayRef.current);
+        skeletonDelayRef.current = null;
+      }
     };
   }, [fetchChapterVerses]);
 
-  // Expose chapter verses to global scope for App.jsx copy function
+  // Expose chapter verses via ref for App.jsx copy function
   useEffect(() => {
-    window.currentChapterVerses = chapterVerses;
-    return () => {
-      window.currentChapterVerses = null;
-    };
-  }, [chapterVerses]);
+    if (chapterVersesRef) {
+      chapterVersesRef.current = chapterVerses;
+    }
+  }, [chapterVerses, chapterVersesRef]);
 
   // Optimized auto-scroll with intersection observer
   useEffect(() => {
@@ -150,64 +225,6 @@ const ChapterReader = ({
     setSelectedVerses(new Set());
   }, [selectedBook, selectedChapter, setSelectedVerses]);
 
-  // Copy selected verses with new format
-  const copySelectedVerses = useCallback(async () => {
-    if (selectedVerses.size === 0) return;
-
-    setCopyState("copying");
-
-    const sortedVerseNumbers = Array.from(selectedVerses).sort((a, b) => a - b);
-
-    // Determine verse range
-    let verseRange;
-    if (sortedVerseNumbers.length === 1) {
-      verseRange = sortedVerseNumbers[0].toString();
-    } else {
-      const start = sortedVerseNumbers[0];
-      const end = sortedVerseNumbers[sortedVerseNumbers.length - 1];
-      verseRange = `${start}-${end}`;
-    }
-
-    // Get book name in translation language
-    const localizedBookName = getBookName(selectedBook, selectedTranslation);
-
-    // Get translation code
-    const translationCode = selectedTranslation?.toUpperCase() || "KJV";
-
-    // Create header: [Book in translation language] [Chapter]:[Verse Range] [Translation]
-    const header = `${localizedBookName} ${selectedChapter}:${verseRange} ${translationCode}`;
-
-    // Get verse content with individual verse numbers
-    const verseLines = sortedVerseNumbers.map((verseNumber) => {
-      const verse = chapterVerses.find(
-        (v) => (v.verse || chapterVerses.indexOf(v) + 1) === verseNumber,
-      );
-      const verseText = verse?.text || "";
-      console.log(`Debug: Verse ${verseNumber}, text: "${verseText}"`);
-      return `${verseNumber} ${verseText}`;
-    });
-
-    const content = verseLines.join("\n");
-    const textToCopy = `${header}\n${content}`;
-
-    console.log("Debug: Final text to copy:", textToCopy);
-
-    try {
-      await navigator.clipboard.writeText(textToCopy);
-      setCopyState("copied");
-      setTimeout(() => setCopyState("idle"), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
-      setCopyState("idle");
-    }
-  }, [
-    selectedVerses,
-    chapterVerses,
-    selectedBook,
-    selectedChapter,
-    selectedTranslation,
-  ]);
-
   // Memoized verse components for better performance
   const verseComponents = useMemo(() => {
     return chapterVerses.map((verse, index) => {
@@ -240,6 +257,10 @@ const ChapterReader = ({
             }`}
             id={`verse-${verseNumber}`}
             onClick={() => handleVerseClick(verseNumber)}
+            role="button"
+            tabIndex={0}
+            aria-pressed={isSelected}
+            aria-label={`Verse ${verseNumber}${isSelected ? ", selected" : ""}. Click to ${isSelected ? "deselect" : "select"}.`}
           >
             <span className="verse-number">{verseNumber}</span>
             <span className="verse-text">{verse.text}</span>
@@ -269,40 +290,70 @@ const ChapterReader = ({
 
   return (
     <div className="chapter-reader">
-      {/* Copy button moved to nav bar */}
-
       <main className="chapter-content">
-        {loading && (
-          <div className="loading-container">
-            <div className="loading-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-              </svg>
-            </div>
-            <div className="loading-text">Loading chapter...</div>
-            <div className="loading-dots">
-              <div className="loading-dot"></div>
-              <div className="loading-dot"></div>
-              <div className="loading-dot"></div>
-            </div>
+        {showSkeleton && !error && (
+          <div
+            className="verses-container"
+            aria-busy="true"
+            aria-label="Loading verses"
+          >
+            {[
+              { heading: true },
+              { width: 95 },
+              { width: 88 },
+              { width: 100 },
+              { width: 92 },
+              { width: 78 },
+              { width: 100 },
+              { width: 85 },
+              { heading: true },
+              { width: 100 },
+              { width: 90 },
+              { width: 95 },
+              { width: 82 },
+              { width: 100 },
+              { width: 88 },
+              { width: 76 },
+              { width: 100 },
+              { width: 93 },
+            ].map((item, index) => {
+              if (item.heading) {
+                return (
+                  <div
+                    key={`skeleton-heading-${index}`}
+                    className="skeleton-heading"
+                  />
+                );
+              }
+              return (
+                <div key={`skeleton-${index}`} className="skeleton-verse">
+                  <div className="skeleton-number"></div>
+                  <div
+                    className="skeleton-text"
+                    style={{ width: `${item.width}%` }}
+                  ></div>
+                </div>
+              );
+            })}
           </div>
         )}
 
         {error && (
           <div className="status-message error">
-            Error loading chapter: {error}
+            Unable to load this chapter. Please check your connection and try
+            again.
           </div>
         )}
 
-        {!loading && !error && chapterVerses.length > 0 && (
+        {!showSkeleton && !error && chapterVerses.length > 0 && (
           <div className="verses-container" ref={versesContainerRef}>
             {verseComponents}
           </div>
         )}
 
-        {!loading && !error && chapterVerses.length === 0 && (
+        {!showSkeleton && !loading && !error && chapterVerses.length === 0 && (
           <div className="status-message">
-            No verses found for this chapter.
+            No verses found for this chapter. Try selecting a different chapter.
           </div>
         )}
       </main>

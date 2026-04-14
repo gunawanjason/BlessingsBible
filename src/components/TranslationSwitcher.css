@@ -1,174 +1,81 @@
-/* Apple WWDC-style Translation Switcher */
+/* Translation Switcher */
 .translation-switcher {
   position: relative;
 }
 
 .translation-button {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   background: var(--bg-secondary);
-  border: none;
-  border-radius: var(--radius, 12px);
-  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px); /* Reduced padding */
-  font-size: 14px; /* Reduced from 16px */
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary, #1d1d1f);
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
+  color: var(--text-primary, #2c2416);
   cursor: pointer;
   outline: none;
-  min-width: 100px; /* Reduced from 120px */
-  height: auto;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  min-width: 80px;
+  height: 44px;
+  transition: border-color 0.15s ease;
   box-shadow: var(--shadow-light);
-  min-height: 40px; /* Reduced from 48px */
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
-  letter-spacing: -0.022em;
-}
-
-.translation-button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color, #007aff) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
 }
 
 .translation-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
-  background: var(--bg-primary);
-}
-
-.translation-button:hover::before {
-  opacity: 0.08;
+  border-color: var(--primary-color);
 }
 
 .translation-button.active {
-  background: var(--primary-color);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-medium);
-}
-
-.translation-button.active .translation-name {
-  color: white;
-}
-
-.translation-button.active .translation-label {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.translation-button.active .chevron-icon {
-  color: white;
-}
-
-.translation-button.active::before {
-  opacity: 0.12;
+  border-color: var(--primary-color);
 }
 
 .translation-info {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  z-index: 1;
-  position: relative;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 32px);
 }
 
 .translation-name {
-  font-size: 14px; /* Reduced from 16px */
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
-  transition: color 0.3s ease;
-  line-height: 1.2;
-  word-break: break-word;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  white-space: normal;
+  color: var(--text-primary, #2c2416);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .translation-label {
-  font-size: 10px; /* Reduced from 11px */
-  font-weight: 500;
-  color: var(--text-secondary, #86868b);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: color 0.3s ease;
-}
-
-.translation-button:hover .translation-name {
-  color: var(--primary-color);
-}
-
-.translation-button:hover .translation-label {
-  color: var(--primary-color);
-}
-
-.translation-button.active:hover .translation-name {
-  color: white;
-}
-
-.translation-button.active:hover .translation-label {
-  color: rgba(255, 255, 255, 0.8);
+  display: none;
 }
 
 .translation-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px; /* Reduced from 24px */
-  height: 20px; /* Reduced from 24px */
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgba(0, 122, 255, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1;
-  position: relative;
+  background: var(--primary-light, rgba(160, 120, 44, 0.12));
   flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.translation-button:hover .translation-indicator {
-  background: var(--primary-color, #007aff);
-  transform: scale(1.1);
 }
 
 .chevron-icon {
-  width: 10px; /* Reduced from 12px */
-  height: 10px; /* Reduced from 12px */
-  color: var(--primary-color, #007aff);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 10px;
+  height: 10px;
+  color: var(--primary-color, #a0782c);
+  transition: transform 0.2s ease;
   stroke-width: 2.5;
-}
-
-.translation-button:hover .chevron-icon {
-  color: white;
-  transform: rotate(180deg);
 }
 
 .translation-button.active .chevron-icon {
   transform: rotate(180deg);
 }
 
-.translation-button.active:hover .chevron-icon {
-  color: white;
-}
-
-/* Enhanced Dropdown with Portal Positioning */
+/* Dropdown */
 .translation-dropdown {
   position: fixed;
   top: calc(var(--trigger-bottom) + 8px);
@@ -177,16 +84,15 @@
   width: 280px;
   background: var(--bg-primary);
   border: 1px solid var(--divider-color);
-  border-radius: var(--radius-large, 16px);
+  border-radius: var(--radius-large);
   box-shadow: var(--shadow-heavy);
   max-height: min(80vh, calc(100vh - 200px));
   overflow: hidden;
-  z-index: 9999; /* Ensure it's above everything */
-  animation: dropdownAppear 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9999;
+  animation: dropdownAppear 0.2s ease-out;
   transform-origin: top right;
 }
 
-/* Ensure dropdown doesn't overflow on smaller screens */
 @media (max-width: 400px) {
   .translation-dropdown {
     right: 0;
@@ -198,7 +104,6 @@
   }
 }
 
-/* Mobile-specific adjustments for dropdown */
 @media (max-width: 768px) {
   .translation-dropdown {
     max-height: min(50vh, calc(100vh - 180px));
@@ -206,28 +111,27 @@
   }
 }
 
-/* Very small screens - Bottom Sheet */
+/* Small mobile - Bottom sheet */
 @media (max-width: 480px) {
   .translation-dropdown {
     position: fixed;
-    top: auto !important;
+    top: auto;
     bottom: 0;
-    right: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-height: 85vh; /* Increased height */
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 85vh;
     margin: 0;
     z-index: 1001;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    border-radius: 20px 20px 0 0; /* Only top corners rounded */
+    border-radius: 16px 16px 0 0;
     border-bottom: none;
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
-    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.25s ease-out;
   }
 
-  /* Handle grabber for affordance */
   .translation-dropdown::after {
     content: "";
     position: absolute;
@@ -235,42 +139,30 @@
     left: 50%;
     transform: translateX(-50%);
     width: 36px;
-    height: 5px;
+    height: 4px;
     background-color: var(--divider-color);
-    border-radius: 2.5px;
+    border-radius: 2px;
     z-index: 1002;
     pointer-events: none;
   }
 
-  /* Position dropdown relative to the button */
   .translation-switcher {
     position: static;
   }
 
-  /* Override any positioning classes */
-  .translation-dropdown.position-up {
-    top: auto;
-    bottom: 0;
-    transform-origin: center bottom;
-    animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    max-height: 85vh;
-  }
-
-  /* Ensure header doesn't take up too much space and makes room for grabber */
   .translation-dropdown .dropdown-header {
     flex-shrink: 0;
-    padding: 20px 20px 12px; /* Top padding increased for grabber */
+    padding: 20px 20px 12px;
     border-bottom: 1px solid var(--divider-color);
   }
 
   .translation-dropdown .dropdown-header h3 {
-    font-size: 18px;
+    font-size: 17px;
     margin-top: 4px;
   }
 
-  /* Ensure full width list */
   .translations-list {
-    padding: 16px 20px; /* More standard padding */
+    padding: 12px 16px;
     width: 100%;
     padding-bottom: env(safe-area-inset-bottom, 20px);
   }
@@ -288,31 +180,12 @@
 @keyframes dropdownAppear {
   from {
     opacity: 0;
-    transform: translateY(-8px) scale(0.95);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
-}
-
-@keyframes dropdownAppearUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Upward dropdown positioning */
-.translation-dropdown.position-up {
-  top: auto;
-  bottom: calc(100% + 8px);
-  transform-origin: bottom right;
-  animation: dropdownAppearUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dropdown-header {
@@ -326,14 +199,11 @@
 }
 
 .dropdown-header h3 {
-  font-size: 18px;
+  font-family: var(--font-display, "Lora", Georgia, serif);
+  font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  color: var(--text-primary, #2c2416);
   margin: 0;
-  letter-spacing: -0.02em;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
 }
 
 .close-button {
@@ -343,22 +213,21 @@
   width: 28px;
   height: 28px;
   background: var(--bg-primary);
-  border: none;
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
+  color: var(--text-secondary);
 }
 
 .close-button:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.05);
+  background: var(--bg-secondary);
 }
 
 .close-button svg {
   width: 14px;
   height: 14px;
-  color: var(--text-secondary, #86868b);
+  color: var(--text-secondary);
   stroke-width: 2.5;
 }
 
@@ -372,31 +241,31 @@
   overflow-x: hidden;
 }
 
-/* Mobile adjustments for translations list */
 @media (max-width: 768px) {
   .translation-button {
-    padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px); /* Further reduced padding */
-    min-height: 36px; /* Reduced from 40px */
-    min-width: 90px; /* Reduced from 100px */
-    font-size: 13px; /* Further reduced */
+    padding: 0 10px;
+    height: 40px;
+    min-height: 40px;
+    min-width: 70px;
+    font-size: 13px;
   }
 
   .translation-name {
-    font-size: 13px; /* Further reduced */
+    font-size: 13px;
   }
 
   .translation-label {
-    font-size: 9px; /* Further reduced */
+    display: none;
   }
 
   .translation-indicator {
-    width: 18px; /* Further reduced */
-    height: 18px; /* Further reduced */
+    width: 18px;
+    height: 18px;
   }
 
   .chevron-icon {
-    width: 9px; /* Further reduced */
-    height: 9px; /* Further reduced */
+    width: 9px;
+    height: 9px;
   }
 
   .translations-list {
@@ -405,31 +274,89 @@
   }
 }
 
-/* Very small mobile screens - maximum compactness */
 @media (max-width: 480px) {
+  .translation-switcher {
+    flex-shrink: 0;
+  }
+
   .translation-button {
-    padding: 2px 6px; /* Minimal padding for smallest screens */
-    min-height: 32px; /* Further reduced height */
-    min-width: 80px; /* Further reduced width */
-    font-size: 12px; /* Smaller font */
+    padding: 0 6px;
+    height: 34px;
+    min-height: 34px;
+    min-width: 50px;
+    font-size: 11px;
   }
 
   .translation-name {
-    font-size: 12px; /* Compact name text */
-  }
-
-  .translation-label {
-    font-size: 8px; /* Very small label text */
+    font-size: 11px;
   }
 
   .translation-indicator {
-    width: 16px; /* Smaller indicator */
-    height: 16px;
+    width: 14px;
+    height: 14px;
   }
 
   .chevron-icon {
-    width: 8px; /* Smaller chevron */
-    height: 8px;
+    width: 7px;
+    height: 7px;
+  }
+}
+
+/* iPhone SE: ≤375px */
+@media (max-width: 375px) {
+  .translation-switcher {
+    flex-shrink: 0;
+  }
+
+  .translation-button {
+    padding: 0 5px;
+    height: 32px;
+    min-height: 32px;
+    min-width: 44px;
+    font-size: 10px;
+  }
+
+  .translation-name {
+    font-size: 10px;
+  }
+
+  .translation-indicator {
+    width: 13px;
+    height: 13px;
+  }
+
+  .chevron-icon {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Tiny mobile: ≤360px */
+@media (max-width: 360px) {
+  .translation-switcher {
+    flex-shrink: 0;
+  }
+
+  .translation-button {
+    padding: 0 4px;
+    height: 30px;
+    min-height: 30px;
+    min-width: 40px;
+    font-size: 9px;
+  }
+
+  .translation-name {
+    font-size: 9px;
+  }
+
+  .translation-indicator {
+    width: 12px;
+    height: 12px;
+  }
+
+  .chevron-icon {
+    width: 5px;
+    height: 5px;
   }
 }
 
@@ -438,7 +365,7 @@
     flex: 1;
     min-height: 0;
     max-height: none;
-    padding: 16px 20px;
+    padding: 12px 16px;
     padding-bottom: env(safe-area-inset-bottom, 20px);
     overflow-y: auto;
     overflow-x: hidden;
@@ -446,7 +373,7 @@
   }
 }
 
-/* Translation category styles */
+/* Category styles */
 .translation-category {
   margin-bottom: var(--spacing-lg, 24px);
 }
@@ -465,12 +392,12 @@
   border: none;
   width: 100%;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-radius: var(--radius, 12px);
+  transition: color 0.15s ease;
+  border-radius: var(--radius);
 }
 
 .category-header:hover {
-  background: var(--bg-secondary);
+  color: var(--primary-color);
 }
 
 .category-info {
@@ -480,43 +407,36 @@
 }
 
 .category-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary, #7a6e5d);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
 }
 
 .category-count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
-  color: var(--text-tertiary, #a1a1a6);
+  color: var(--text-tertiary, #a39882);
   background: var(--bg-secondary);
-  padding: 2px 8px;
-  border-radius: 12px;
-  min-width: 24px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
   text-align: center;
 }
 
 .category-chevron {
-  width: 16px;
-  height: 16px;
-  color: var(--text-secondary, #86868b);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
   stroke-width: 2.5;
   flex-shrink: 0;
 }
 
 .category-chevron.expanded {
   transform: rotate(180deg);
-  color: var(--primary-color, #007aff);
-}
-
-.category-header:hover .category-chevron {
-  color: var(--primary-color, #007aff);
+  color: var(--primary-color, #a0782c);
 }
 
 .category-translations {
@@ -525,78 +445,45 @@
   gap: var(--spacing-xs, 4px);
   padding: 4px;
   overflow: hidden;
-  animation: expandCategory 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: expandCategory 0.2s ease-out;
 }
 
 @keyframes expandCategory {
   from {
     opacity: 0;
     max-height: 0;
-    transform: translateY(-8px);
   }
   to {
     opacity: 1;
     max-height: 500px;
-    transform: translateY(0);
   }
 }
 
 .translation-item {
   display: flex;
   align-items: flex-start;
-  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  background: var(--bg-primary);
+  padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+  background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius, 12px);
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
   text-align: left;
-  position: relative;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue",
-    Helvetica, Arial, sans-serif;
-  letter-spacing: -0.022em;
-  min-height: 48px;
-}
-
-.translation-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color, #007aff) 0%,
-    rgba(0, 122, 255, 0.8) 100%
-  );
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: -1;
+  font-family: var(--font-body, "Source Sans 3", sans-serif);
+  min-height: 44px;
 }
 
 .translation-item:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-light);
-}
-
-.translation-item:hover::before {
-  opacity: 0.08;
+  border-color: var(--border-color);
 }
 
 .translation-item.active {
-  background: var(--primary-color);
+  background: var(--primary-color, #a0782c);
   color: white;
   font-weight: 600;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
-}
-
-.translation-item.active::before {
-  opacity: 0;
 }
 
 .translation-content {
@@ -604,9 +491,6 @@
   align-items: flex-start;
   justify-content: space-between;
   width: 100%;
-  z-index: 1;
-  position: relative;
-  min-height: 100%;
 }
 
 .translation-names {
@@ -619,14 +503,11 @@
 }
 
 .short-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #1d1d1f);
-  transition: color 0.3s ease;
+  color: var(--text-primary, #2c2416);
   line-height: 1.2;
   word-break: break-word;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
   white-space: normal;
 }
 
@@ -635,16 +516,12 @@
 }
 
 .full-name {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 400;
-  color: var(--text-secondary, #86868b);
-  transition: color 0.3s ease;
+  color: var(--text-secondary, #7a6e5d);
   line-height: 1.3;
   word-break: break-word;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
   white-space: normal;
-  hyphens: auto;
 }
 
 .translation-item.active .full-name {
@@ -663,7 +540,7 @@
   color: white;
   stroke-width: 2.5;
   opacity: 0;
-  transition: all 0.2s ease;
+  transition: opacity 0.15s ease;
   transform: scale(0.8);
 }
 
@@ -672,23 +549,23 @@
   transform: scale(1);
 }
 
-/* Focus states for accessibility */
+/* Focus */
 .translation-button:focus-visible {
-  outline: 2px solid var(--primary-color, #007aff);
+  outline: 2px solid var(--primary-color);
   outline-offset: 2px;
 }
 
 .translation-item:focus-visible {
-  outline: 2px solid var(--primary-color, #007aff);
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 
 .close-button:focus-visible {
-  outline: 2px solid var(--primary-color, #007aff);
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 
-/* Reduced motion support */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .translation-button,
   .translation-item,

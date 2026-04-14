@@ -69,7 +69,7 @@ export const generateShareUrl = (
   book,
   chapter,
   translation,
-  selectedVerses
+  selectedVerses,
 ) => {
   const baseUrl = window.location.origin + window.location.pathname;
   const verses = serializeVerses(selectedVerses);

@@ -1,0 +1,19 @@
+/* Main app layout container */
+
+.app-main {
+  flex: 1;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  width: 100%;
+  min-height: calc(100vh - var(--nav-height, 80px));
+  min-height: calc(100dvh - var(--nav-height, 80px));
+  background: var(--bg-tertiary);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (max-width: 1040px) {
+  .app-main {
+    min-height: calc(100vh - var(--nav-height, 100px));
+    min-height: calc(100dvh - var(--nav-height, 100px));
+  }
+}

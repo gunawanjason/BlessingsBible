@@ -353,7 +353,9 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
       >
         <div className="translation-info">
           <span className="translation-name">{currentTranslation.name}</span>
-          <span className="translation-label">Translation</span>
+          <span className="translation-label">
+            {currentTranslation.fullName}
+          </span>
         </div>
         <div className="translation-indicator">
           <svg

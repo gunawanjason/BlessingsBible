@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./VerseComparisonPanel.css";
 import ComparisonView from "./ComparisonView";
-import SyncControls from "./SyncControls";
 import ScrollToTop from "./ScrollToTop";
-import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
+import { fetchChapterCached, fetchHeadingsCached } from "../services/bibleApi";
 import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
 
 const VerseComparisonPanel = ({
@@ -19,22 +18,37 @@ const VerseComparisonPanel = ({
   syncEnabled,
   setSyncEnabled,
   showCopyInNav = false,
+  translations,
+  removingTranslations,
 }) => {
-  const [translations, setTranslations] = useState(() => {
-    const first = selectedTranslation || "KJV";
-    // Avoid duplicate if the first translation is NIV
-    const second = first === "NIV" ? "KJV" : "NIV";
-    return [first, second];
-  });
-  const [loadingStates, setLoadingStates] = useState({});
   const [alignedVerses, setAlignedVerses] = useState([]);
-  const [versesData, setVersesData] = useState({});
   const [headingsData, setHeadingsData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSyncHint, setShowSyncHint] = useState(() => {
+    return !localStorage.getItem("syncHintDismissed");
+  });
   const panelRef = useRef(null);
   const scrollSyncTimeout = useRef(null);
   const heightSyncTimeout = useRef(null);
+  const headersRef = useRef(null);
+  const viewsRef = useRef(null);
+  // Stores the last known verse count so the skeleton can match the column height
+  // even after alignedVerses has been cleared for a new chapter load. Default of 30
+  // roughly covers most chapters and fills the viewport on first load.
+  const prevVerseCountRef = useRef(30);
+
+  const dismissSyncHint = useCallback(() => {
+    setShowSyncHint(false);
+    localStorage.setItem("syncHintDismissed", "true");
+  }, []);
+
+  // Sync horizontal scrolling between views container and sticky headers
+  const handleHorizontalScroll = useCallback((e) => {
+    if (headersRef.current) {
+      headersRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  }, []);
 
   // Get localized book name based on translation language
   const getLocalizedBookName = useCallback((bookName, translation) => {
@@ -43,19 +57,17 @@ const VerseComparisonPanel = ({
     return localizedNames?.[bookName] || bookName; // Fallback to original if not found
   }, []);
 
+  // Minimum time the skeleton stays visible, even when every translation is
+  // served from cache. Keeps the loading affordance consistent across visits.
+  const MIN_LOADING_VISIBLE = 300;
+
   // Fetch and align verses for all translations
   const fetchAllTranslationVerses = useCallback(async () => {
     if (!selectedBook || !selectedChapter || translations.length === 0) return;
 
     setError(null);
     setIsLoading(true);
-
-    // Set loading state for each translation being fetched
-    setLoadingStates((prev) => {
-      const newStates = { ...prev };
-      translations.forEach((t) => (newStates[t] = "loading"));
-      return newStates;
-    });
+    const loadStartedAt = Date.now();
 
     try {
       const chapterReference = `${selectedBook} ${selectedChapter}`;
@@ -67,19 +79,19 @@ const VerseComparisonPanel = ({
         translations.map(async (translation) => {
           try {
             const [versesResponse, headingsResponse] = await Promise.all([
-              fetchMultipleVerses(translation, chapterReference),
-              fetchHeadings(translation, selectedBook, selectedChapter),
+              fetchChapterCached(translation, selectedBook, selectedChapter),
+              fetchHeadingsCached(translation, selectedBook, selectedChapter),
             ]);
 
-            allVersesData[translation] = versesResponse.reduce((acc, verse) => {
-              acc[verse.verse] = verse.text;
-              return acc;
-            }, {});
+            allVersesData[translation] = versesResponse.data.reduce(
+              (acc, verse) => {
+                acc[verse.verse] = verse.text;
+                return acc;
+              },
+              {},
+            );
 
-            allHeadingsData[translation] = headingsResponse;
-
-            // Clear loading state for successful fetch
-            setLoadingStates((prev) => ({ ...prev, [translation]: null }));
+            allHeadingsData[translation] = headingsResponse.data;
           } catch (err) {
             console.error(
               `Error fetching ${translation} for ${chapterReference}:`,
@@ -87,13 +99,6 @@ const VerseComparisonPanel = ({
             );
             allVersesData[translation] = {};
             allHeadingsData[translation] = [];
-            setLoadingStates((prev) => ({
-              ...prev,
-              [translation]: {
-                status: "error",
-                message: err.message || "Failed to fetch verses",
-              },
-            }));
           }
         }),
       );
@@ -121,16 +126,20 @@ const VerseComparisonPanel = ({
         return verseData;
       });
 
-      setVersesData(allVersesData);
+      // Hold the skeleton visible for a minimum duration so cache-hit loads
+      // still animate rather than snapping to content.
+      const elapsed = Date.now() - loadStartedAt;
+      const remaining = MIN_LOADING_VISIBLE - elapsed;
+      if (remaining > 0) {
+        await new Promise((resolve) => setTimeout(resolve, remaining));
+      }
+
       setHeadingsData(allHeadingsData);
       setAlignedVerses(aligned);
     } catch (err) {
       setError(err.message);
-      setVersesData({});
       setHeadingsData({});
       setAlignedVerses([]);
-      // Clear all loading states on error
-      setLoadingStates({});
     } finally {
       setIsLoading(false);
     }
@@ -140,39 +149,52 @@ const VerseComparisonPanel = ({
   const alignVerseHeights = useCallback(() => {
     if (!panelRef.current || alignedVerses.length === 0) return;
 
-    // Use requestAnimationFrame for smooth UI updates
     requestAnimationFrame(() => {
+      const headingHeights = new Map();
       const verseHeights = new Map();
 
-      // First pass: Measure all verse heights without modifying DOM
+      // Read pass: measure heading areas and verse items without touching the DOM
       alignedVerses.forEach((verseData) => {
-        let maxHeight = 0;
+        let maxHeading = 0;
+        let maxVerse = 0;
         translations.forEach((translation) => {
-          const verseElement = panelRef.current.querySelector(
+          const headingEl = panelRef.current.querySelector(
+            `#view-${translation}-heading-${verseData.verse}`,
+          );
+          const verseEl = panelRef.current.querySelector(
             `#view-${translation}-verse-${verseData.verse}`,
           );
-          if (verseElement) {
-            // Force layout calculation by reading height
-            const height = verseElement.getBoundingClientRect().height;
-            maxHeight = Math.max(maxHeight, height);
-          }
+          if (headingEl)
+            maxHeading = Math.max(
+              maxHeading,
+              headingEl.getBoundingClientRect().height,
+            );
+          if (verseEl)
+            maxVerse = Math.max(
+              maxVerse,
+              verseEl.getBoundingClientRect().height,
+            );
         });
-        verseHeights.set(verseData.verse, maxHeight);
+        headingHeights.set(verseData.verse, maxHeading);
+        verseHeights.set(verseData.verse, maxVerse);
       });
 
-      // Second pass: Apply all height changes in one batch
+      // Write pass: apply heights in one batch
       alignedVerses.forEach((verseData) => {
-        const targetHeight = verseHeights.get(verseData.verse);
-        if (targetHeight) {
-          translations.forEach((translation) => {
-            const verseElement = panelRef.current.querySelector(
-              `#view-${translation}-verse-${verseData.verse}`,
-            );
-            if (verseElement) {
-              verseElement.style.minHeight = `${targetHeight}px`;
-            }
-          });
-        }
+        const maxHeading = headingHeights.get(verseData.verse);
+        const maxVerse = verseHeights.get(verseData.verse);
+        translations.forEach((translation) => {
+          const headingEl = panelRef.current.querySelector(
+            `#view-${translation}-heading-${verseData.verse}`,
+          );
+          const verseEl = panelRef.current.querySelector(
+            `#view-${translation}-verse-${verseData.verse}`,
+          );
+          if (headingEl && maxHeading > 0)
+            headingEl.style.minHeight = `${maxHeading}px`;
+          if (verseEl && maxVerse > 0)
+            verseEl.style.minHeight = `${maxVerse}px`;
+        });
       });
     });
   }, [alignedVerses, translations]);
@@ -190,12 +212,16 @@ const VerseComparisonPanel = ({
         // First reset all heights to auto to get natural heights
         alignedVerses.forEach((verseData) => {
           translations.forEach((translation) => {
-            const verseElement = panelRef.current.querySelector(
+            const headingEl = panelRef.current.querySelector(
+              `#view-${translation}-heading-${verseData.verse}`,
+            );
+            const verseEl = panelRef.current.querySelector(
               `#view-${translation}-verse-${verseData.verse}`,
             );
-            if (verseElement) {
-              verseElement.style.minHeight = "auto";
-              verseElement.style.height = "auto";
+            if (headingEl) headingEl.style.minHeight = "auto";
+            if (verseEl) {
+              verseEl.style.minHeight = "auto";
+              verseEl.style.height = "auto";
             }
           });
         });
@@ -217,85 +243,49 @@ const VerseComparisonPanel = ({
         const verseElements = [];
         let maxHeight = 0;
 
-        // Step 1: Collect all verse elements for this specific verse
+        // Collect verse item elements for this verse number
         translations.forEach((translation) => {
-          const verseElement = panelRef.current.querySelector(
+          const verseEl = panelRef.current.querySelector(
             `#view-${translation}-verse-${verseNumber}`,
           );
-          if (verseElement) {
-            verseElement.classList.add("height-syncing");
-            verseElements.push(verseElement);
+          if (verseEl) {
+            verseEl.classList.add("height-syncing");
+            verseElements.push(verseEl);
           }
         });
 
-        // Step 2: Reset all heights to auto to get natural heights (important for shrinking on unselect)
-        verseElements.forEach((element) => {
-          element.style.minHeight = "auto";
-          element.style.height = "auto";
+        // Reset verse item heights
+        verseElements.forEach((el) => {
+          el.style.minHeight = "auto";
+          el.style.height = "auto";
         });
 
-        // Step 3: Force reflow to ensure heights are calculated with current content state
-        verseElements.forEach((element) => {
-          element.offsetHeight; // Force reflow
+        // Force reflow
+        verseElements.forEach((el) => {
+          el.offsetHeight;
         });
 
-        // Step 4: Find the maximum natural height after reset
-        verseElements.forEach((element) => {
-          const height = element.getBoundingClientRect().height;
-          maxHeight = Math.max(maxHeight, height);
+        // Find max verse item height and apply
+        verseElements.forEach((el) => {
+          maxHeight = Math.max(maxHeight, el.getBoundingClientRect().height);
         });
-
-        // Step 5: Apply the new max height to all verse elements in this row
         if (maxHeight > 0) {
-          verseElements.forEach((element) => {
-            element.style.minHeight = `${maxHeight}px`;
+          verseElements.forEach((el) => {
+            el.style.minHeight = `${maxHeight}px`;
           });
         }
 
-        // Step 6: Clean up animation class after transition
+        // Heading areas don't change on selection, no need to recalculate them
+
         setTimeout(() => {
-          verseElements.forEach((element) => {
-            element.classList.remove("height-syncing");
+          verseElements.forEach((el) => {
+            el.classList.remove("height-syncing");
           });
         }, 450);
       });
     },
     [translations],
   );
-
-  // Handle adding/removing translations
-  const handleAddTranslation = useCallback((translationId) => {
-    setTranslations((prev) => {
-      if (prev.includes(translationId)) return prev;
-      return [...prev, translationId];
-    });
-  }, []);
-
-  const handleRemoveTranslation = useCallback(
-    (translationId) => {
-      setTranslations((prev) => {
-        // Don't allow removing the first translation (synced with main dropdown)
-        if (prev.length <= 1 || prev[0] === translationId) {
-          return prev;
-        }
-        return prev.filter((t) => t !== translationId);
-      });
-      // Clear loading state for removed translation
-      setLoadingStates((prev) => {
-        const newStates = { ...prev };
-        delete newStates[translationId];
-        return newStates;
-      });
-      // Trigger debounced height sync since there's more horizontal space now
-      debouncedHeightSync();
-    },
-    [debouncedHeightSync],
-  );
-
-  // Toggle sync between panels
-  const toggleSync = useCallback(() => {
-    setSyncEnabled((prev) => !prev);
-  }, [setSyncEnabled]);
 
   // Handle verse selection (synced mode)
   const handleVerseSelect = useCallback(
@@ -347,6 +337,45 @@ const VerseComparisonPanel = ({
     },
     [syncEnabled, syncSingleVerseHeight],
   );
+
+  // On chapter/book change: clear stale verse data and reset scroll positions.
+  // Clearing alignedVerses makes hasData=false so the skeleton renders during loading.
+  // (When only translations change, we intentionally keep existing column data so
+  //  only the newly-added translation column shows a skeleton.)
+  useEffect(() => {
+    setAlignedVerses([]);
+    setHeadingsData({});
+
+    // Mobile: reset each column's internal scroll
+    if (panelRef.current) {
+      panelRef.current.querySelectorAll(".verses-list").forEach((el) => {
+        el.scrollTop = 0;
+      });
+    }
+    // Mobile views container (horizontal snap + landscape vertical)
+    if (viewsRef.current) {
+      viewsRef.current.scrollLeft = 0;
+      viewsRef.current.scrollTop = 0;
+    }
+    // Desktop: the window itself scrolls — bring the panel back to the top
+    if (panelRef.current) {
+      const navHeight =
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--nav-height",
+          ),
+        ) || 80;
+      const panelTop =
+        panelRef.current.getBoundingClientRect().top +
+        window.scrollY -
+        navHeight;
+      if (window.scrollY > panelTop + 50) {
+        // instant: skeleton renders in the same frame the scroll lands,
+        // so the user never sees the gap below a short skeleton mid-animation.
+        window.scrollTo({ top: panelTop, behavior: "instant" });
+      }
+    }
+  }, [selectedBook, selectedChapter]);
 
   // Clear selections when chapter changes
   useEffect(() => {
@@ -498,6 +527,14 @@ const VerseComparisonPanel = ({
     // No-op since individual containers don't scroll
   }, []);
 
+  // Keep prevVerseCountRef current so skeleton height matches the last loaded chapter
+  // even after alignedVerses is cleared for the next load.
+  useEffect(() => {
+    if (alignedVerses.length > 0) {
+      prevVerseCountRef.current = alignedVerses.length;
+    }
+  }, [alignedVerses]);
+
   // Fetch verses when book, chapter, or translations change
   useEffect(() => {
     fetchAllTranslationVerses();
@@ -553,12 +590,16 @@ const VerseComparisonPanel = ({
         // First reset all heights to auto to get natural heights
         alignedVerses.forEach((verseData) => {
           translations.forEach((translation) => {
-            const verseElement = panelRef.current.querySelector(
+            const headingEl = panelRef.current.querySelector(
+              `#view-${translation}-heading-${verseData.verse}`,
+            );
+            const verseEl = panelRef.current.querySelector(
               `#view-${translation}-verse-${verseData.verse}`,
             );
-            if (verseElement) {
-              verseElement.style.minHeight = "auto";
-              verseElement.style.height = "auto";
+            if (headingEl) headingEl.style.minHeight = "auto";
+            if (verseEl) {
+              verseEl.style.minHeight = "auto";
+              verseEl.style.height = "auto";
             }
           });
         });
@@ -584,30 +625,6 @@ const VerseComparisonPanel = ({
     };
   }, [alignedVerses, alignVerseHeights, translations]);
 
-  // Update first translation when selectedTranslation changes
-  useEffect(() => {
-    if (
-      selectedTranslation &&
-      translations.length > 0 &&
-      translations[0] !== selectedTranslation
-    ) {
-      setTranslations((prev) => {
-        const newTranslations = [...prev];
-        const existingIndex = newTranslations.indexOf(selectedTranslation);
-
-        if (existingIndex > 0) {
-          // If already exists, swap it to the first position to preserve both
-          newTranslations[existingIndex] = newTranslations[0];
-          newTranslations[0] = selectedTranslation;
-        } else {
-          // Otherwise just replace the first one
-          newTranslations[0] = selectedTranslation;
-        }
-        return newTranslations;
-      });
-    }
-  }, [selectedTranslation, translations]);
-
   // Clear timeouts on unmount
   useEffect(() => {
     return () => {
@@ -624,40 +641,123 @@ const VerseComparisonPanel = ({
   // Mobile scroll behavior is now handled by CSS scroll-snap
   return (
     <div className="verse-comparison-panel" ref={panelRef}>
-      <div className="panel-header">
-        <h3>Verse Comparison</h3>
-        <div className="header-controls">
-          <SyncControls
-            translations={translations}
-            onAddTranslation={handleAddTranslation}
-            onRemoveTranslation={handleRemoveTranslation}
-            syncEnabled={syncEnabled}
-            onToggleSync={toggleSync}
-          />
-        </div>
-      </div>
-
-      {error && <div className="error-message">Error: {error}</div>}
-
-      {isLoading && alignedVerses.length === 0 && (
-        <div className="loading-container">
-          <div className="loading-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" />
-            </svg>
-          </div>
-          <div className="loading-text">Setting up verse comparison...</div>
-          <div className="loading-dots">
-            <div className="loading-dot"></div>
-            <div className="loading-dot"></div>
-            <div className="loading-dot"></div>
-          </div>
+      {error && (
+        <div className="error-message">
+          Unable to load verse comparison. Please try again.
         </div>
       )}
 
-      {!isLoading && (
-        <div className="comparison-views-container comparison-scroll-container">
-          {translations.map((translation) => (
+      {showSyncHint && (
+        <div className="sync-hint">
+          <span className="sync-hint-text">
+            <strong>Sync on:</strong> Clicking a verse in any translation
+            selects the same verse in all translations. Toggle sync off to
+            select independently.
+          </span>
+          <button
+            className="sync-hint-dismiss"
+            onClick={dismissSyncHint}
+            aria-label="Dismiss hint"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Desktop Sticky Headers (Separated to avoid overflow-x trapping) */}
+      <div className="comparison-sticky-headers" ref={headersRef}>
+        <div className="comparison-sticky-headers-inner">
+          {translations.map((translation) => {
+            const isRemoving = removingTranslations.has(translation);
+            return (
+              <div
+                key={`sticky-header-${translation}`}
+                className={`comparison-header-item ${isRemoving ? "column-removing" : "column-entering"}`}
+              >
+                <h4>{translation}</h4>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div
+        className="comparison-views-container comparison-scroll-container"
+        aria-busy={isLoading}
+        ref={viewsRef}
+        onScroll={handleHorizontalScroll}
+      >
+        {translations.map((translation) => {
+          const hasData =
+            alignedVerses.length > 0 &&
+            alignedVerses[0][translation] !== undefined;
+          const isRemoving = removingTranslations.has(translation);
+
+          if (!hasData && isLoading) {
+            // Show skeleton for this column (initial load or newly added translation)
+            return (
+              <div
+                key={`skeleton-${translation}`}
+                className="skeleton-column comparison-view-container skeleton-entering"
+              >
+                <div className="skeleton-column-header">
+                  <div className="skeleton-header-label" />
+                </div>
+                <div className="skeleton-verses">
+                  {(() => {
+                    // Match the height of existing columns.
+                    // When alignedVerses is cleared for a new chapter load, fall back to the
+                    // previous chapter's count (stored in prevVerseCountRef) so skeleton rows
+                    // extend to wherever the user was scrolled.
+                    const rowCount =
+                      alignedVerses.length > 0
+                        ? alignedVerses.length
+                        : prevVerseCountRef.current;
+                    return Array.from({ length: rowCount }, (_, i) => {
+                      // Sprinkle heading placeholders at roughly realistic positions
+                      if (
+                        i === 0 ||
+                        i === Math.floor(rowCount * 0.35) ||
+                        i === Math.floor(rowCount * 0.7)
+                      ) {
+                        return { heading: true };
+                      }
+                      // Deterministic varying widths so rows look natural
+                      return { width: 65 + ((i * 7 + 13) % 35) };
+                    });
+                  })().map((item, i) => {
+                    if (item.heading) {
+                      return (
+                        <div
+                          key={`skeleton-heading-${i}`}
+                          className="skeleton-heading"
+                        />
+                      );
+                    }
+                    return (
+                      <div key={i} className="skeleton-verse">
+                        <div className="skeleton-number" />
+                        <div
+                          className="skeleton-text"
+                          style={{ width: `${item.width}%` }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
+          return (
             <ComparisonView
               key={translation}
               id={`view-${translation}`}
@@ -683,10 +783,11 @@ const VerseComparisonPanel = ({
                       handleIndependentVerseSelect(translation, verseNumber)
               }
               syncEnabled={syncEnabled}
+              className={isRemoving ? "column-removing" : "column-entering"}
             />
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
       <ScrollToTop />
     </div>
     // Mobile snapping scroll: ensure active panel is centered after scroll ends

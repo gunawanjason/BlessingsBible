@@ -1,3 +1,11 @@
+import {
+  getCachedChapter,
+  setCachedChapter,
+  getCachedHeadings,
+  setCachedHeadings,
+  hasCachedChapter,
+} from "./bibleCache";
+
 const API_BASE_URL = "https://api.blessings365.top";
 
 // Helper function to parse verse references
@@ -68,7 +76,7 @@ const formatMultipleVersesForAPI = (references) => {
 export const fetchSingleVerse = async (translation, book, chapter, verse) => {
   try {
     const url = `${API_BASE_URL}/${translation.toUpperCase()}/single?book=${encodeURIComponent(
-      book
+      book,
     )}&chapter=${chapter}&verse=${verse}`;
 
     console.log("Fetching single verse from:", url);
@@ -80,7 +88,7 @@ export const fetchSingleVerse = async (translation, book, chapter, verse) => {
         throw new Error(`Verse not found: ${book} ${chapter}:${verse}`);
       }
       throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
+        `API request failed: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -117,7 +125,7 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
 
     const formattedRefs = formatMultipleVersesForAPI(references);
     const url = `${API_BASE_URL}/${translation.toUpperCase()}/multiple?verses=${encodeURIComponent(
-      formattedRefs
+      formattedRefs,
     )}`;
 
     console.log("Fetching multiple verses from:", url);
@@ -129,7 +137,7 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
         throw new Error(`Verses not found: ${versesQuery}`);
       }
       throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
+        `API request failed: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -183,7 +191,7 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
 export const fetchHeadings = async (translation, book, chapter) => {
   try {
     const url = `${API_BASE_URL}/${translation.toUpperCase()}/headings?book=${encodeURIComponent(
-      book
+      book,
     )}&chapter=${chapter}`;
 
     console.log("Fetching headings from:", url);
@@ -195,7 +203,7 @@ export const fetchHeadings = async (translation, book, chapter) => {
         return []; // Return empty array if no headings found
       }
       throw new Error(
-        `API request failed: ${response.status} ${response.statusText}`
+        `API request failed: ${response.status} ${response.statusText}`,
       );
     }
 
@@ -232,7 +240,7 @@ export const fetchVerses = async (translation, reference) => {
         translation,
         parsed.book,
         parsed.chapter,
-        parsed.verse
+        parsed.verse,
       );
       return [verse]; // Return as array for consistency
     }
@@ -242,9 +250,35 @@ export const fetchVerses = async (translation, reference) => {
   }
 };
 
+// Cached chapter fetch — returns previously-fetched verses instantly on hit,
+// otherwise falls back to the network and populates the cache.
+export const fetchChapterCached = async (translation, book, chapter) => {
+  const cached = getCachedChapter(translation, book, chapter);
+  if (cached) return { data: cached, fromCache: true };
+
+  const data = await fetchMultipleVerses(translation, `${book} ${chapter}`);
+  setCachedChapter(translation, book, chapter, data);
+  return { data, fromCache: false };
+};
+
+// Cached pericope headings fetch.
+export const fetchHeadingsCached = async (translation, book, chapter) => {
+  const cached = getCachedHeadings(translation, book, chapter);
+  if (cached) return { data: cached, fromCache: true };
+
+  const data = await fetchHeadings(translation, book, chapter);
+  setCachedHeadings(translation, book, chapter, data);
+  return { data, fromCache: false };
+};
+
+export { hasCachedChapter };
+
 export default {
   fetchSingleVerse,
   fetchMultipleVerses,
   fetchHeadings,
   fetchVerses,
+  fetchChapterCached,
+  fetchHeadingsCached,
+  hasCachedChapter,
 };

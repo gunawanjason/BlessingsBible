@@ -1,0 +1,119 @@
+/* Design tokens — colors, typography, spacing, layout */
+@import url("https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+
+:root {
+  /* Colors - Light Mode — Warm, inviting palette */
+  --color-bg: #f8f6f2;
+  --color-bg-card: #ffffff;
+  --color-bg-hover: #f3f1ec;
+  --color-bg-active: #ebe8e0;
+  --color-text-primary: #2c2520;
+  --color-text-secondary: #6d635a;
+  --color-text-tertiary: #9a9088;
+  --color-accent: #4a624a;
+  --color-accent-light: rgba(74, 98, 74, 0.08);
+  --color-accent-hover: #3d503d;
+  --color-accent-gradient: linear-gradient(135deg, #5f7a5f 0%, #4a624a 100%);
+  --color-border: #e5e0d8;
+  --color-border-hover: #d4cdc3;
+  --color-shadow: rgba(44, 37, 32, 0.06);
+  --color-shadow-hover: rgba(44, 37, 32, 0.12);
+  --color-shadow-lg: rgba(44, 37, 32, 0.08);
+  --color-verse-number: #8a8078;
+  --color-verse-number-bg: rgba(44, 37, 32, 0.05);
+  --color-selected: rgba(74, 98, 74, 0.08);
+  --color-selected-border: rgba(74, 98, 74, 0.25);
+  --color-pericope: #2c2520;
+  --color-spinner: #4a624a;
+  --color-danger: #ef4444;
+  --color-danger-bg: #fef2f2;
+  --color-success: #10b981;
+  --color-hero-bg: linear-gradient(
+    135deg,
+    #f8f6f2 0%,
+    #eee8df 50%,
+    #e8e2d8 100%
+  );
+
+  /* Legacy aliases — keeps existing component CSS working */
+  --bg-primary: var(--color-bg);
+  --bg-secondary: var(--color-bg-hover);
+  --bg-tertiary: var(--color-bg-card);
+  --bg-overlay: #f8f6f2;
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-tertiary: var(--color-text-tertiary);
+  --primary-color: var(--color-accent);
+  --primary-hover: var(--color-accent-hover);
+  --primary-light: var(--color-accent-light);
+  --accent-color: #5f7a5f;
+  --secondary-color: var(--color-text-secondary);
+  --border-color: var(--color-border);
+  --divider-color: var(--color-border);
+  --shadow-light: 0 1px 3px var(--color-shadow);
+  --shadow-medium: 0 4px 12px var(--color-shadow);
+  --shadow-heavy: 0 8px 24px var(--color-shadow-lg);
+  --success-color: var(--color-success);
+  --error-color: var(--color-danger);
+
+  /* Typography */
+  --font-display: "Lora", Georgia, "Times New Roman", serif;
+  --font-body:
+    "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+
+  /* Border Radius */
+  --radius: 8px;
+  --radius-large: 12px;
+
+  /* Layout */
+  --nav-height: 80px;
+  --content-max-width: 1200px;
+  --reading-max-width: 720px;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  --color-bg: #0f0f0f;
+  --color-bg-card: #1a1a1a;
+  --color-bg-hover: #242424;
+  --color-bg-active: #2e2e2e;
+  --color-text-primary: #f0ece6;
+  --color-text-secondary: #a09890;
+  --color-text-tertiary: #6d635a;
+  --color-accent: #7d947d;
+  --color-accent-light: rgba(125, 148, 125, 0.1);
+  --color-accent-hover: #a3b5a3;
+  --color-accent-gradient: linear-gradient(135deg, #7d947d 0%, #a3b5a3 100%);
+  --color-border: #2a2724;
+  --color-border-hover: #3a3632;
+  --color-shadow: rgba(0, 0, 0, 0.25);
+  --color-shadow-hover: rgba(0, 0, 0, 0.4);
+  --color-shadow-lg: rgba(0, 0, 0, 0.3);
+  --color-verse-number: #7a7068;
+  --color-verse-number-bg: rgba(255, 255, 255, 0.06);
+  --color-selected: rgba(125, 148, 125, 0.12);
+  --color-selected-border: rgba(125, 148, 125, 0.3);
+  --color-pericope: #f0ece6;
+  --color-spinner: #7d947d;
+  --color-danger: #f87171;
+  --color-danger-bg: rgba(248, 113, 113, 0.1);
+  --color-success: #10b981;
+  --color-hero-bg: linear-gradient(
+    135deg,
+    #0f0f0f 0%,
+    #1a1816 50%,
+    #1e1b18 100%
+  );
+
+  /* Legacy alias overrides for dark mode */
+  --bg-overlay: #0f0f0f;
+  --accent-color: #a3b5a3;
+}

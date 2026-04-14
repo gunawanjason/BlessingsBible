@@ -1,5 +1,5 @@
-import React from 'react';
-import './VerseDisplay.css';
+import React from "react";
+import "./VerseDisplay.css";
 
 const VerseDisplay = ({ verses }) => {
   if (!verses || verses.length === 0) {
@@ -19,9 +19,7 @@ const VerseDisplay = ({ verses }) => {
           <div className="verse-reference">
             {verse.book} {verse.chapter}:{verse.verse}
           </div>
-          <div className="verse-text">
-            {verse.text}
-          </div>
+          <div className="verse-text">{verse.text}</div>
         </div>
       ))}
     </div>

@@ -1,0 +1,29 @@
+/* Print styles */
+
+@media print {
+  .app-nav,
+  .view-switcher,
+  .scroll-to-top,
+  .copy-section,
+  .nav-copy-actions,
+  .dark-mode-toggle,
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+
+  .app-main {
+    max-width: none;
+    background: white;
+    color: black;
+    min-height: auto;
+  }
+
+  .verse-item {
+    break-inside: avoid;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+}

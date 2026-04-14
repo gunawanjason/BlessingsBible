@@ -1,0 +1,287 @@
+/* Reusable button styles — copy, share, icon, dark-mode toggle */
+
+/* Copy Button */
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+  white-space: nowrap;
+  height: 34px;
+  min-width: 34px;
+}
+
+.copy-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.copy-button:active:not(:disabled) {
+  opacity: 0.9;
+}
+
+.copy-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.copy-button.copied {
+  background: var(--success-color);
+}
+
+.copy-button.copying {
+  background: var(--secondary-color);
+}
+
+.copy-text {
+  font-weight: 500;
+}
+
+.copy-button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.copy-count {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Share Button */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    opacity 0.15s ease;
+  white-space: nowrap;
+  height: 34px;
+  min-width: 34px;
+}
+
+.share-button:hover:not(:disabled) {
+  background: #3d503d;
+}
+
+.share-button:active:not(:disabled) {
+  opacity: 0.9;
+}
+
+.share-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.share-text {
+  font-weight: 500;
+}
+
+.share-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.share-count {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Icon buttons (dark mode, mobile menu) */
+.icon-button,
+.dark-mode-toggle {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.icon-button svg,
+.dark-mode-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-button:hover,
+.dark-mode-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.icon-button:active,
+.dark-mode-toggle:active {
+  background: var(--border-color);
+}
+
+/* Touch device: ensure larger targets */
+@media (pointer: coarse) {
+  .icon-button,
+  .dark-mode-toggle {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Mobile: compact icon buttons - no borders, consistent sizing */
+@media (max-width: 768px) {
+  .icon-button,
+  .dark-mode-toggle,
+  .mobile-menu-toggle {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border: none;
+    background: transparent;
+  }
+
+  .icon-button svg,
+  .dark-mode-toggle svg,
+  .mobile-menu-toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Minimum touch targets */
+  button,
+  .copy-button,
+  [role="button"] {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .copy-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  .share-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    min-height: 36px;
+  }
+}
+
+/* Tablet and below: hide button text labels */
+@media (max-width: 1040px) {
+  .copy-button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .share-button {
+    font-size: 12px;
+    padding: 6px 10px;
+    min-height: 36px;
+  }
+
+  .copy-text,
+  .share-text {
+    display: none;
+  }
+}
+
+/* Small mobile: ≤480px */
+@media (max-width: 480px) {
+  .copy-button {
+    font-size: 10px;
+    padding: 2px 6px;
+    min-height: 28px;
+  }
+
+  .share-button {
+    font-size: 10px;
+    padding: 2px 6px;
+    min-height: 28px;
+  }
+
+  .icon-button,
+  .dark-mode-toggle {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .icon-button svg,
+  .dark-mode-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* iPhone SE and similar: ≤375px */
+@media (max-width: 375px) {
+  .icon-button,
+  .dark-mode-toggle {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .icon-button svg,
+  .dark-mode-toggle svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Tiny mobile: ≤360px */
+@media (max-width: 360px) {
+  .icon-button,
+  .dark-mode-toggle {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .icon-button svg,
+  .dark-mode-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+}

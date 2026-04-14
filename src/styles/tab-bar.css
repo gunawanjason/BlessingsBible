@@ -1,0 +1,284 @@
+/* View tab bar — sits beneath nav, holds view tabs and copy/share actions */
+
+.view-tab-bar {
+  border-top: 1px solid var(--border-color);
+}
+
+.view-tab-bar-inner {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 clamp(12px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: 44px;
+}
+
+.tab-bar-tabs {
+  display: flex;
+  align-items: center;
+  flex: 1 0 0;
+}
+
+/* SyncControls wrapper — desktop: inline after tabs */
+.tab-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 100%;
+  order: 2;
+}
+
+/* Tab bar actions - Copy/Share buttons */
+.tab-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  visibility: hidden;
+  max-width: 0;
+  overflow: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    max-width 0.3s ease,
+    padding-left 0.3s ease,
+    margin-left 0.3s ease;
+  height: 100%;
+  order: 3; /* sit after sync controls (order:2) on desktop */
+}
+
+.tab-bar-actions.visible {
+  opacity: 1;
+  visibility: visible;
+  max-width: 200px;
+  /* Separator between the translation chips and the copy button */
+  margin-left: var(--spacing-xs);
+  padding-left: var(--spacing-sm);
+  border-left: 1px solid var(--color-border);
+}
+
+/* Copy/Share chips in the tab bar.
+   Soft green tint — same family as the verse-selection highlight,
+   no outline conflict, count as plain text beside the icon. */
+.tab-bar-actions .copy-button,
+.tab-bar-actions .share-button {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 8px;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: var(--color-accent-light);
+  color: var(--primary-color);
+  border: 1px solid var(--color-selected-border);
+}
+
+.tab-bar-actions .copy-button svg,
+.tab-bar-actions .share-button svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.tab-bar-actions .copy-button:hover:not(:disabled),
+.tab-bar-actions .share-button:hover:not(:disabled) {
+  background: rgba(74, 98, 74, 0.14);
+  border-color: var(--primary-color);
+}
+
+.tab-bar-actions .copy-button.copied {
+  color: var(--success-color);
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.tab-bar-actions .copy-button.copying {
+  opacity: 0.6;
+}
+
+/* Count: plain number beside icon — no box-inside-a-chip */
+.tab-bar-actions .copy-count,
+.tab-bar-actions .share-count {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.view-tab {
+  padding: 10px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--text-secondary);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.view-tab:hover {
+  color: var(--text-primary);
+}
+
+.view-tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* Touch device: larger view tabs */
+@media (pointer: coarse) {
+  .view-tab {
+    height: 44px;
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+
+  .tab-bar-actions .copy-button,
+  .tab-bar-actions .share-button {
+    min-height: 36px;
+    height: 36px;
+  }
+}
+
+/* Mobile tab bar — two-row layout */
+@media (max-width: 768px) {
+  .view-tab-bar-inner {
+    padding: 0 var(--spacing-sm);
+    min-height: 40px;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  /* Row 1: tabs (left) + copy/share (right) */
+  .tab-bar-tabs {
+    order: 1;
+    flex: 1 0 0;
+    min-height: 40px;
+    align-items: center;
+  }
+
+  .tab-bar-actions {
+    order: 2; /* row 1 right-side on mobile (controls are row 2, order:3) */
+    flex: 0 0 auto;
+    align-self: center;
+    gap: 4px;
+  }
+
+  /* Row 2: sync controls — full width, horizontally scrollable */
+  .tab-bar-controls {
+    order: 3;
+    flex: 0 0 100%;
+    min-height: 0;
+    padding: 4px var(--spacing-sm);
+    border-top: 1px solid var(--color-border);
+    overflow-x: auto;
+    overflow-y: visible;
+    /* Do NOT clip overflow-y — the + Add dropdown is position:absolute and must escape */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    position: relative;
+  }
+
+  .tab-bar-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .view-tab {
+    padding: 0 12px;
+    font-size: 13px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .tab-bar-actions .copy-button,
+  .tab-bar-actions .share-button {
+    height: 28px;
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .tab-bar-actions .copy-button svg,
+  .tab-bar-actions .share-button svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .view-tab-bar-inner {
+    padding: 0 8px;
+    min-height: 36px;
+  }
+
+  .view-tab {
+    padding: 0 10px;
+    font-size: 12px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .tab-bar-controls {
+    gap: 4px;
+  }
+
+  .tab-bar-actions .copy-button,
+  .tab-bar-actions .share-button {
+    height: 28px;
+    min-height: 28px;
+    padding: 0 7px;
+    font-size: 10px;
+  }
+
+  .tab-bar-actions .copy-button svg,
+  .tab-bar-actions .share-button svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 375px) {
+  .view-tab-bar-inner {
+    min-height: 34px;
+  }
+
+  .view-tab {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .tab-bar-actions .copy-button,
+  .tab-bar-actions .share-button {
+    height: 26px;
+    min-height: 26px;
+    padding: 0 6px;
+  }
+
+  .tab-bar-actions .copy-button svg,
+  .tab-bar-actions .share-button svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .tab-bar-actions .copy-count,
+  .tab-bar-actions .share-count {
+    font-size: 10px;
+  }
+}
