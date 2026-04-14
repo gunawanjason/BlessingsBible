@@ -93,9 +93,6 @@ function App() {
     useState(new Set());
   const [copyState, setCopyState] = useState("idle");
   const [showMobileMenu, setShowMobileMenu] = useState(true);
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return !localStorage.getItem("welcomeDismissed");
-  });
   const mobileMenuRef = useRef(null);
   const chapterVersesRef = useRef([]);
   const navRef = useRef(null);
@@ -542,10 +539,6 @@ function App() {
     });
   };
 
-  const dismissWelcome = () => {
-    setShowWelcome(false);
-    localStorage.setItem("welcomeDismissed", "true");
-  };
 
   // Context value for verse data
   const verseContextValue = {
@@ -693,40 +686,6 @@ function App() {
             {error === "Failed to fetch verses"
               ? "Unable to load verses. Check your connection and try again, or select a different chapter."
               : error}
-          </div>
-        )}
-
-        {/* Welcome banner for first-time visitors */}
-        {showWelcome && (
-          <div className="welcome-banner" role="alert">
-            <div className="welcome-content">
-              <div className="welcome-text">
-                <h2>Welcome to BlessingsBible</h2>
-                <p>
-                  Read scripture in 11 translations, compare side by side, and
-                  share your favourite verses.
-                </p>
-                <p className="welcome-tip">
-                  <strong>Tip:</strong> Click any verse to select it, then use
-                  the copy button to copy.
-                </p>
-              </div>
-              <button
-                className="welcome-close"
-                onClick={dismissWelcome}
-                aria-label="Dismiss welcome message"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
           </div>
         )}
 
