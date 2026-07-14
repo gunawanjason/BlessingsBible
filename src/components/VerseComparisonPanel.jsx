@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./VerseComparisonPanel.css";
 import ComparisonView from "./ComparisonView";
 import ScrollToTop from "./ScrollToTop";
-import { fetchChapterCached, fetchHeadingsCached } from "../services/bibleApi";
+import {
+  fetchChapterCached,
+  fetchHeadingsCached,
+  hasCachedChapter,
+} from "../services/bibleApi";
 import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
 
 const VerseComparisonPanel = ({
@@ -10,13 +14,11 @@ const VerseComparisonPanel = ({
   selectedChapter,
   bibleStructure,
   highlightedVerse,
-  selectedTranslation,
   selectedVerses,
   setSelectedVerses,
   independentSelections,
   setIndependentSelections,
   syncEnabled,
-  setSyncEnabled,
   showCopyInNav = false,
   translations,
   removingTranslations,
@@ -26,13 +28,18 @@ const VerseComparisonPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showSyncHint, setShowSyncHint] = useState(() => {
-    return !localStorage.getItem("syncHintDismissed");
+    try {
+      return !localStorage.getItem("syncHintDismissed");
+    } catch {
+      return true;
+    }
   });
   const panelRef = useRef(null);
-  const scrollSyncTimeout = useRef(null);
   const heightSyncTimeout = useRef(null);
   const headersRef = useRef(null);
   const viewsRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const fetchIdRef = useRef(0);
   // Stores the last known verse count so the skeleton can match the column height
   // even after alignedVerses has been cleared for a new chapter load. Default of 30
   // roughly covers most chapters and fills the viewport on first load.
@@ -40,7 +47,11 @@ const VerseComparisonPanel = ({
 
   const dismissSyncHint = useCallback(() => {
     setShowSyncHint(false);
-    localStorage.setItem("syncHintDismissed", "true");
+    try {
+      localStorage.setItem("syncHintDismissed", "true");
+    } catch {
+      // The hint can still be dismissed for this session when storage is blocked.
+    }
   }, []);
 
   // Sync horizontal scrolling between views container and sticky headers
@@ -57,31 +68,45 @@ const VerseComparisonPanel = ({
     return localizedNames?.[bookName] || bookName; // Fallback to original if not found
   }, []);
 
-  // Minimum time the skeleton stays visible, even when every translation is
-  // served from cache. Keeps the loading affordance consistent across visits.
-  const MIN_LOADING_VISIBLE = 300;
-
   // Fetch and align verses for all translations
   const fetchAllTranslationVerses = useCallback(async () => {
     if (!selectedBook || !selectedChapter || translations.length === 0) return;
 
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const fetchId = ++fetchIdRef.current;
+
     setError(null);
-    setIsLoading(true);
-    const loadStartedAt = Date.now();
+    setIsLoading(
+      !translations.every((translation) =>
+        hasCachedChapter(translation, selectedBook, selectedChapter),
+      ),
+    );
 
     try {
-      const chapterReference = `${selectedBook} ${selectedChapter}`;
       const allVersesData = {};
       const allHeadingsData = {};
+      const headingsPromises = {};
 
-      // Fetch verses and headings for each translation
+      // Fetch verse text first; optional headings continue in parallel.
       await Promise.all(
         translations.map(async (translation) => {
           try {
-            const [versesResponse, headingsResponse] = await Promise.all([
-              fetchChapterCached(translation, selectedBook, selectedChapter),
-              fetchHeadingsCached(translation, selectedBook, selectedChapter),
-            ]);
+            headingsPromises[translation] = fetchHeadingsCached(
+              translation,
+              selectedBook,
+              selectedChapter,
+              { signal: controller.signal },
+            ).catch(() => ({ data: [], fromCache: false }));
+            const versesResponse = await fetchChapterCached(
+              translation,
+              selectedBook,
+              selectedChapter,
+              {
+                signal: controller.signal,
+              },
+            );
 
             allVersesData[translation] = versesResponse.data.reduce(
               (acc, verse) => {
@@ -90,18 +115,16 @@ const VerseComparisonPanel = ({
               },
               {},
             );
-
-            allHeadingsData[translation] = headingsResponse.data;
           } catch (err) {
-            console.error(
-              `Error fetching ${translation} for ${chapterReference}:`,
-              err,
+            if (err.name === "AbortError") throw err;
+            throw new Error(
+              `Unable to load ${translation}: ${err.message || "request failed"}`,
             );
-            allVersesData[translation] = {};
-            allHeadingsData[translation] = [];
           }
         }),
       );
+
+      if (controller.signal.aborted || fetchIdRef.current !== fetchId) return;
 
       // Get all unique verse numbers across all translations
       const allVerseNumbers = new Set();
@@ -126,22 +149,32 @@ const VerseComparisonPanel = ({
         return verseData;
       });
 
-      // Hold the skeleton visible for a minimum duration so cache-hit loads
-      // still animate rather than snapping to content.
-      const elapsed = Date.now() - loadStartedAt;
-      const remaining = MIN_LOADING_VISIBLE - elapsed;
-      if (remaining > 0) {
-        await new Promise((resolve) => setTimeout(resolve, remaining));
-      }
-
-      setHeadingsData(allHeadingsData);
       setAlignedVerses(aligned);
-    } catch (err) {
-      setError(err.message);
-      setHeadingsData({});
-      setAlignedVerses([]);
-    } finally {
       setIsLoading(false);
+
+      await Promise.all(
+        translations.map(async (translation) => {
+          const headingsResponse = await headingsPromises[translation];
+          allHeadingsData[translation] = headingsResponse.data;
+        }),
+      );
+      if (!controller.signal.aborted && fetchIdRef.current === fetchId) {
+        setHeadingsData({ ...allHeadingsData });
+      }
+    } catch (err) {
+      if (
+        err.name !== "AbortError" &&
+        !controller.signal.aborted &&
+        fetchIdRef.current === fetchId
+      ) {
+        setError(err.message);
+        setHeadingsData({});
+        setAlignedVerses([]);
+      }
+    } finally {
+      if (!controller.signal.aborted && fetchIdRef.current === fetchId) {
+        setIsLoading(false);
+      }
     }
   }, [selectedBook, selectedChapter, translations]);
 
@@ -260,11 +293,6 @@ const VerseComparisonPanel = ({
           el.style.height = "auto";
         });
 
-        // Force reflow
-        verseElements.forEach((el) => {
-          el.offsetHeight;
-        });
-
         // Find max verse item height and apply
         verseElements.forEach((el) => {
           maxHeight = Math.max(maxHeight, el.getBoundingClientRect().height);
@@ -305,7 +333,7 @@ const VerseComparisonPanel = ({
         syncSingleVerseHeight(verseNumber);
       }
     },
-    [syncEnabled, syncSingleVerseHeight],
+    [syncEnabled, syncSingleVerseHeight, setSelectedVerses],
   );
 
   // Handle verse selection (independent mode per translation)
@@ -335,7 +363,7 @@ const VerseComparisonPanel = ({
         syncSingleVerseHeight(verseNumber);
       }
     },
-    [syncEnabled, syncSingleVerseHeight],
+    [syncEnabled, syncSingleVerseHeight, setIndependentSelections],
   );
 
   // On chapter/book change: clear stale verse data and reset scroll positions.
@@ -538,6 +566,7 @@ const VerseComparisonPanel = ({
   // Fetch verses when book, chapter, or translations change
   useEffect(() => {
     fetchAllTranslationVerses();
+    return () => abortControllerRef.current?.abort();
   }, [fetchAllTranslationVerses]);
 
   // Align verse heights after verses are loaded
@@ -627,13 +656,9 @@ const VerseComparisonPanel = ({
 
   // Clear timeouts on unmount
   useEffect(() => {
+    const timeoutRef = heightSyncTimeout;
     return () => {
-      if (scrollSyncTimeout.current) {
-        clearTimeout(scrollSyncTimeout.current);
-      }
-      if (heightSyncTimeout.current) {
-        clearTimeout(heightSyncTimeout.current);
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -642,8 +667,8 @@ const VerseComparisonPanel = ({
   return (
     <div className="verse-comparison-panel" ref={panelRef}>
       {error && (
-        <div className="error-message">
-          Unable to load verse comparison. Please try again.
+        <div className="error-message" role="alert">
+          {error}. Please try again.
         </div>
       )}
 

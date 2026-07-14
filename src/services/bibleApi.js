@@ -7,6 +7,47 @@ import {
 } from "./bibleCache";
 
 const API_BASE_URL = "https://api.blessings365.top";
+const REQUEST_TIMEOUT_MS = 12000;
+
+const createAbortError = () => {
+  const error = new Error("The request was cancelled");
+  error.name = "AbortError";
+  return error;
+};
+
+const fetchWithTimeout = async (
+  url,
+  { signal, timeout = REQUEST_TIMEOUT_MS } = {},
+) => {
+  if (signal?.aborted) throw createAbortError();
+
+  const controller = new AbortController();
+  let timedOut = false;
+  const handleAbort = () => controller.abort();
+  signal?.addEventListener("abort", handleAbort, { once: true });
+
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeout);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } catch (error) {
+    if (timedOut) {
+      const timeoutError = new Error(
+        "The Bible service took too long to respond",
+      );
+      timeoutError.name = "TimeoutError";
+      throw timeoutError;
+    }
+    if (signal?.aborted) throw createAbortError();
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    signal?.removeEventListener("abort", handleAbort);
+  }
+};
 
 // Helper function to parse verse references
 const parseVerseReference = (reference) => {
@@ -73,15 +114,19 @@ const formatMultipleVersesForAPI = (references) => {
 };
 
 // Fetch single verse from api.blessings365.top
-export const fetchSingleVerse = async (translation, book, chapter, verse) => {
+export const fetchSingleVerse = async (
+  translation,
+  book,
+  chapter,
+  verse,
+  options = {},
+) => {
   try {
     const url = `${API_BASE_URL}/${translation.toUpperCase()}/single?book=${encodeURIComponent(
       book,
     )}&chapter=${chapter}&verse=${verse}`;
 
-    console.log("Fetching single verse from:", url);
-
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -104,13 +149,19 @@ export const fetchSingleVerse = async (translation, book, chapter, verse) => {
       reference: `${book} ${chapter}:${verse}`,
     };
   } catch (error) {
-    console.error("Error in fetchSingleVerse:", error);
+    if (error.name !== "AbortError") {
+      console.error("Error in fetchSingleVerse:", error);
+    }
     throw error;
   }
 };
 
 // Fetch multiple verses from api.blessings365.top
-export const fetchMultipleVerses = async (translation, versesQuery) => {
+export const fetchMultipleVerses = async (
+  translation,
+  versesQuery,
+  options = {},
+) => {
   try {
     // Parse the verses query into individual references
     let references;
@@ -128,9 +179,7 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
       formattedRefs,
     )}`;
 
-    console.log("Fetching multiple verses from:", url);
-
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -182,21 +231,26 @@ export const fetchMultipleVerses = async (translation, versesQuery) => {
       ];
     }
   } catch (error) {
-    console.error("Error in fetchMultipleVerses:", error);
+    if (error.name !== "AbortError") {
+      console.error("Error in fetchMultipleVerses:", error);
+    }
     throw error;
   }
 };
 
 // Fetch pericope headings from api.blessings365.top
-export const fetchHeadings = async (translation, book, chapter) => {
+export const fetchHeadings = async (
+  translation,
+  book,
+  chapter,
+  options = {},
+) => {
   try {
     const url = `${API_BASE_URL}/${translation.toUpperCase()}/headings?book=${encodeURIComponent(
       book,
     )}&chapter=${chapter}`;
 
-    console.log("Fetching headings from:", url);
-
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -210,18 +264,19 @@ export const fetchHeadings = async (translation, book, chapter) => {
     const data = await response.json();
     return data.headings || [];
   } catch (error) {
-    console.error("Error in fetchHeadings:", error);
-    // Return empty array on error to avoid breaking the UI for missing headings
-    return [];
+    if (error.name !== "AbortError") {
+      console.error("Error in fetchHeadings:", error);
+    }
+    throw error;
   }
 };
 
 // Main fetch function that determines whether to use single or multiple endpoint
-export const fetchVerses = async (translation, reference) => {
+export const fetchVerses = async (translation, reference, options = {}) => {
   try {
     // Check if it's multiple references (contains comma)
     if (reference.includes(",")) {
-      return await fetchMultipleVerses(translation, reference);
+      return await fetchMultipleVerses(translation, reference, options);
     }
 
     const parsed = parseVerseReference(reference);
@@ -229,11 +284,11 @@ export const fetchVerses = async (translation, reference) => {
     if (parsed.isChapter) {
       // For chapter requests, fetch the whole chapter using multiple verses endpoint
       const chapterRef = `${parsed.book} ${parsed.chapter}`;
-      return await fetchMultipleVerses(translation, chapterRef);
+      return await fetchMultipleVerses(translation, chapterRef, options);
     } else if (parsed.isRange) {
       // For ranges, use multiple verses endpoint
       const rangeRef = `${parsed.book} ${parsed.chapter}:${parsed.startVerse}-${parsed.endVerse}`;
-      return await fetchMultipleVerses(translation, rangeRef);
+      return await fetchMultipleVerses(translation, rangeRef, options);
     } else {
       // Single verse
       const verse = await fetchSingleVerse(
@@ -241,32 +296,53 @@ export const fetchVerses = async (translation, reference) => {
         parsed.book,
         parsed.chapter,
         parsed.verse,
+        options,
       );
       return [verse]; // Return as array for consistency
     }
   } catch (error) {
-    console.error("Error in fetchVerses:", error);
+    if (error.name !== "AbortError") {
+      console.error("Error in fetchVerses:", error);
+    }
     throw error;
   }
 };
 
 // Cached chapter fetch — returns previously-fetched verses instantly on hit,
 // otherwise falls back to the network and populates the cache.
-export const fetchChapterCached = async (translation, book, chapter) => {
+export const fetchChapterCached = async (
+  translation,
+  book,
+  chapter,
+  options = {},
+) => {
+  if (options.signal?.aborted) throw createAbortError();
   const cached = getCachedChapter(translation, book, chapter);
   if (cached) return { data: cached, fromCache: true };
 
-  const data = await fetchMultipleVerses(translation, `${book} ${chapter}`);
+  const data = await fetchMultipleVerses(
+    translation,
+    `${book} ${chapter}`,
+    options,
+  );
+  if (options.signal?.aborted) throw createAbortError();
   setCachedChapter(translation, book, chapter, data);
   return { data, fromCache: false };
 };
 
 // Cached pericope headings fetch.
-export const fetchHeadingsCached = async (translation, book, chapter) => {
+export const fetchHeadingsCached = async (
+  translation,
+  book,
+  chapter,
+  options = {},
+) => {
+  if (options.signal?.aborted) throw createAbortError();
   const cached = getCachedHeadings(translation, book, chapter);
   if (cached) return { data: cached, fromCache: true };
 
-  const data = await fetchHeadings(translation, book, chapter);
+  const data = await fetchHeadings(translation, book, chapter, options);
+  if (options.signal?.aborted) throw createAbortError();
   setCachedHeadings(translation, book, chapter, data);
   return { data, fromCache: false };
 };

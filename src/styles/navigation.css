@@ -75,7 +75,7 @@
   flex: 1 1 0%;
   min-width: 0;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .nav-secondary-controls .translation-switcher {
@@ -198,8 +198,8 @@
   }
 }
 
-/* Single-row header: 841px–1040px */
-@media (max-width: 1040px) and (min-width: 841px) {
+/* Single-row header when the complete control set has enough room. */
+@media (max-width: 1040px) and (min-width: 961px) {
   .nav-content {
     flex-direction: row;
     flex-wrap: nowrap;
@@ -253,8 +253,8 @@
   }
 }
 
-/* Two-row header: ≤840px */
-@media (max-width: 840px) {
+/* Two-row header: localized labels need more room below this width. */
+@media (max-width: 960px) {
   .nav-content {
     flex-direction: column;
     align-items: center;
@@ -265,6 +265,7 @@
   .nav-top {
     display: flex;
     width: 100%;
+    min-height: 44px;
     justify-content: center;
     align-items: center;
     position: relative;
@@ -284,6 +285,14 @@
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
+    min-height: 44px;
+  }
+
+  .nav-actions .dark-mode-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Controls in second row - Stacked on mobile to prevent overflow */
@@ -358,21 +367,22 @@
     gap: 6px;
     padding: 0 4px;
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
   }
 
   .nav-primary-controls {
-    flex: 0 0 auto;
+    flex: 0 0 100%;
+    width: 100%;
     min-width: 0;
-    max-width: 45%;
+    max-width: none;
   }
 
   .nav-secondary-controls {
     flex: 1 1 0%;
     gap: 6px;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .app-logo {
@@ -407,7 +417,7 @@
     gap: 4px;
     padding: 0 2px;
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
   }
 
@@ -415,7 +425,7 @@
     flex: 1 1 0%;
     gap: 4px;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .app-logo {
@@ -441,7 +451,7 @@
   .nav-controls {
     gap: 3px;
     justify-content: flex-start;
-    overflow: hidden;
+    overflow: visible;
     max-width: 100%;
   }
 
@@ -449,7 +459,7 @@
     flex: 1 1 0%;
     gap: 3px;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .app-logo {
@@ -458,5 +468,85 @@
 
   .app-title {
     font-size: 12px;
+  }
+}
+
+/* Medium screens use a deliberate toolbar instead of stretched mobile rows. */
+@media (min-width: 481px) and (max-width: 960px) {
+  .nav-content {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .nav-top {
+    min-height: 44px;
+    padding: 0 2px;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    justify-content: flex-start;
+  }
+
+  .nav-actions {
+    position: static;
+    min-height: 44px;
+    transform: none;
+  }
+
+  .nav-controls {
+    gap: 6px;
+    padding: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: calc(var(--radius-large) + 2px);
+    box-shadow: var(--shadow-light);
+  }
+
+  .nav-primary-controls,
+  .nav-secondary-controls {
+    min-width: 0;
+  }
+
+  .nav-controls .chapter-display-button,
+  .nav-controls .chapter-control-group,
+  .nav-controls .search-container,
+  .nav-controls .translation-button {
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 960px) {
+  .nav-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .nav-primary-controls {
+    flex: 0 1 auto;
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .nav-secondary-controls {
+    flex: 1 1 240px;
+    width: auto;
+    gap: 6px;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 720px) {
+  .nav-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-primary-controls,
+  .nav-secondary-controls {
+    width: 100%;
+  }
+
+  .nav-secondary-controls {
+    gap: 6px;
   }
 }

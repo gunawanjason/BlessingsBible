@@ -43,6 +43,12 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
       onClick={handleShare}
       className="share-button"
       disabled={disabled}
+      aria-live="polite"
+      aria-label={
+        copied
+          ? "Share link copied"
+          : `Copy share link for ${verseCount} selected verse${verseCount === 1 ? "" : "s"}`
+      }
       title="Share selected verses"
     >
       {copied ? (
@@ -53,6 +59,7 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
             stroke="currentColor"
             strokeWidth="2"
             className="share-icon"
+            aria-hidden="true"
           >
             <polyline points="20,6 9,17 4,12" />
           </svg>
@@ -65,6 +72,7 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
             stroke="currentColor"
             strokeWidth="2"
             className="share-icon"
+            aria-hidden="true"
           >
             <circle cx="18" cy="5" r="3" />
             <circle cx="6" cy="12" r="3" />

@@ -10,6 +10,7 @@
   min-height: 2em;
   cursor: pointer;
   position: relative;
+  outline: none;
 }
 
 .verse-number {
@@ -113,6 +114,11 @@
 .verse-item.selectable:hover,
 .verse-item:hover {
   background-color: var(--bg-secondary);
+}
+
+.verse-item:focus-visible {
+  outline: 2px solid var(--primary-color, #a0782c);
+  outline-offset: 2px;
 }
 
 .verse-item.selected {

@@ -9,7 +9,7 @@
   --color-bg-active: #ebe8e0;
   --color-text-primary: #2c2520;
   --color-text-secondary: #6d635a;
-  --color-text-tertiary: #9a9088;
+  --color-text-tertiary: #756c64;
   --color-accent: #4a624a;
   --color-accent-light: rgba(74, 98, 74, 0.08);
   --color-accent-hover: #3d503d;
@@ -19,7 +19,7 @@
   --color-shadow: rgba(44, 37, 32, 0.06);
   --color-shadow-hover: rgba(44, 37, 32, 0.12);
   --color-shadow-lg: rgba(44, 37, 32, 0.08);
-  --color-verse-number: #8a8078;
+  --color-verse-number: #756c64;
   --color-verse-number-bg: rgba(44, 37, 32, 0.05);
   --color-selected: rgba(74, 98, 74, 0.08);
   --color-selected-border: rgba(74, 98, 74, 0.25);
@@ -27,7 +27,9 @@
   --color-spinner: #4a624a;
   --color-danger: #ef4444;
   --color-danger-bg: #fef2f2;
-  --color-success: #10b981;
+  --color-on-accent: #f8f6f2;
+  --color-on-danger: #0f0f0f;
+  --color-success: #087a57;
   --color-hero-bg: linear-gradient(
     135deg,
     #f8f6f2 0%,
@@ -46,7 +48,7 @@
   --primary-color: var(--color-accent);
   --primary-hover: var(--color-accent-hover);
   --primary-light: var(--color-accent-light);
-  --accent-color: #5f7a5f;
+  --accent-color: var(--color-accent);
   --secondary-color: var(--color-text-secondary);
   --border-color: var(--color-border);
   --divider-color: var(--color-border);
@@ -87,7 +89,7 @@
   --color-bg-active: #2e2e2e;
   --color-text-primary: #f0ece6;
   --color-text-secondary: #a09890;
-  --color-text-tertiary: #6d635a;
+  --color-text-tertiary: #958b83;
   --color-accent: #7d947d;
   --color-accent-light: rgba(125, 148, 125, 0.1);
   --color-accent-hover: #a3b5a3;
@@ -97,7 +99,7 @@
   --color-shadow: rgba(0, 0, 0, 0.25);
   --color-shadow-hover: rgba(0, 0, 0, 0.4);
   --color-shadow-lg: rgba(0, 0, 0, 0.3);
-  --color-verse-number: #7a7068;
+  --color-verse-number: #a09890;
   --color-verse-number-bg: rgba(255, 255, 255, 0.06);
   --color-selected: rgba(125, 148, 125, 0.12);
   --color-selected-border: rgba(125, 148, 125, 0.3);
@@ -105,7 +107,9 @@
   --color-spinner: #7d947d;
   --color-danger: #f87171;
   --color-danger-bg: rgba(248, 113, 113, 0.1);
-  --color-success: #10b981;
+  --color-on-accent: #0f0f0f;
+  --color-on-danger: #0f0f0f;
+  --color-success: #34d399;
   --color-hero-bg: linear-gradient(
     135deg,
     #0f0f0f 0%,

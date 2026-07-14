@@ -146,6 +146,16 @@ const ComparisonView = ({
     [onVerseSelect],
   );
 
+  const handleVerseKeyDown = useCallback(
+    (event, verseNumber) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleVerseClick(verseNumber);
+      }
+    },
+    [handleVerseClick],
+  );
+
   // Auto-scroll to highlighted verse
   useEffect(() => {
     if (!highlightedVerse || verses.length === 0) return;
@@ -215,9 +225,13 @@ const ComparisonView = ({
                   selectedVerses.has(verse.verse) ? "selected" : ""
                 } selectable`}
                 onClick={() => handleVerseClick(verse.verse)}
+                onKeyDown={(event) => handleVerseKeyDown(event, verse.verse)}
+                role="button"
+                tabIndex={0}
+                aria-pressed={selectedVerses.has(verse.verse)}
               >
                 <span className="verse-number">{verse.verse}</span>
-                <span className="verse-text">
+                <div className="verse-text">
                   {verse.isEmpty ? (
                     <span className="missing-verse">—</span>
                   ) : (
@@ -241,7 +255,7 @@ const ComparisonView = ({
                       }
                     })()
                   )}
-                </span>
+                </div>
               </div>
             </div>
           ))}

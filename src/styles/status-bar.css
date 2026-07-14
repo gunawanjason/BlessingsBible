@@ -15,5 +15,5 @@
 
 .status-bar.error {
   background: var(--error-color);
-  color: white;
+  color: var(--color-on-danger);
 }

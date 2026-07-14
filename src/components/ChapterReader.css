@@ -335,12 +335,12 @@
 
 .verse-item.selected .verse-number {
   background: var(--primary-color, #a0782c);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .verse-item.highlighted .verse-number {
   background: var(--accent-color, #b85c38);
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .verse-text {

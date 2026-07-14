@@ -7,7 +7,7 @@
   justify-content: center;
   gap: 4px;
   background: var(--primary-color);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius);
   padding: 0 10px;
@@ -38,6 +38,7 @@
 
 .copy-button.copied {
   background: var(--success-color);
+  color: var(--color-on-danger);
 }
 
 .copy-button.copying {
@@ -70,7 +71,7 @@
   justify-content: center;
   gap: 4px;
   background: var(--accent-color);
-  color: white;
+  color: var(--color-on-accent);
   border: none;
   border-radius: var(--radius);
   padding: 0 10px;
@@ -87,7 +88,7 @@
 }
 
 .share-button:hover:not(:disabled) {
-  background: #3d503d;
+  background: var(--primary-hover);
 }
 
 .share-button:active:not(:disabled) {
@@ -239,10 +240,10 @@
 
   .icon-button,
   .dark-mode-toggle {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .icon-button svg,
@@ -256,10 +257,10 @@
 @media (max-width: 375px) {
   .icon-button,
   .dark-mode-toggle {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .icon-button svg,
@@ -273,10 +274,10 @@
 @media (max-width: 360px) {
   .icon-button,
   .dark-mode-toggle {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .icon-button svg,

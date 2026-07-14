@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useId, useRef } from "react";
 import { getBookName, getTestamentLabel } from "../utils/translationMappings";
 import "./BookSelector.css";
 
@@ -10,6 +10,10 @@ const BookSelector = ({
   onChapterChange,
   selectedTranslation,
   integrated = false,
+  onPreviousChapter,
+  onNextChapter,
+  isPrevDisabled,
+  isNextDisabled,
 }) => {
   const [showBooks, setShowBooks] = useState(false);
   const [showChapters, setShowChapters] = useState(false);
@@ -18,8 +22,14 @@ const BookSelector = ({
   const [showNewTestament, setShowNewTestament] = useState(true);
   const bookDropdownRef = useRef(null);
   const chapterDropdownRef = useRef(null);
+  const bookTriggerRef = useRef(null);
+  const bookMenuHeadingRef = useRef(null);
   const searchInputRef = useRef(null);
   const selectedBookRef = useRef(null);
+  const idPrefix = useId();
+  const bookMenuId = `${idPrefix}-book-menu`;
+  const chapterMenuId = `${idPrefix}-chapter-menu`;
+  const bookSearchId = `${idPrefix}-book-search`;
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -45,17 +55,28 @@ const BookSelector = ({
     };
   }, []);
 
-  // Focus search input and scroll to selected book when opening
+  // Avoid opening the virtual keyboard until mobile users choose to search.
   useEffect(() => {
-    if (showBooks) {
-      setTimeout(() => {
+    if (!showBooks) return undefined;
+
+    const focusTimer = window.setTimeout(() => {
+      const shouldAutoFocusSearch = window.matchMedia(
+        "(min-width: 769px) and (pointer: fine)",
+      ).matches;
+
+      if (shouldAutoFocusSearch) {
         searchInputRef.current?.focus();
-        selectedBookRef.current?.scrollIntoView({
-          block: "center",
-          behavior: "instant",
-        });
-      }, 100);
-    }
+      } else {
+        bookMenuHeadingRef.current?.focus({ preventScroll: true });
+      }
+
+      selectedBookRef.current?.scrollIntoView({
+        block: "center",
+        behavior: "instant",
+      });
+    }, 100);
+
+    return () => window.clearTimeout(focusTimer);
   }, [showBooks]);
 
   if (!bibleStructure) return null;
@@ -64,18 +85,51 @@ const BookSelector = ({
     (book) => book.name === selectedBook,
   );
   const totalChapters = currentBook?.chapters || 0;
+  const localizedBookName = selectedBook
+    ? getBookName(selectedBook, selectedTranslation)
+    : "Select Book";
+
+  const closeBookMenu = (restoreFocus = false) => {
+    setShowBooks(false);
+    setSearchQuery("");
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => bookTriggerRef.current?.focus());
+    }
+  };
 
   const handleBookSelect = (book) => {
     onBookChange(book.name);
     onChapterChange(1); // Start at chapter 1 when selecting a new book
-    setShowBooks(false);
-    setSearchQuery("");
+    closeBookMenu(true);
   };
 
   const handleChapterSelect = (chapterNumber) => {
     onChapterChange(chapterNumber);
     setShowChapters(false);
   };
+
+  const handlePreviousChapter = () => {
+    setShowChapters(false);
+    if (onPreviousChapter) {
+      onPreviousChapter();
+    } else if (selectedChapter > 1) {
+      onChapterChange(selectedChapter - 1);
+    }
+  };
+
+  const handleNextChapter = () => {
+    setShowChapters(false);
+    if (onNextChapter) {
+      onNextChapter();
+    } else if (selectedChapter < totalChapters) {
+      onChapterChange(selectedChapter + 1);
+    }
+  };
+
+  const previousDisabled = isPrevDisabled ?? selectedChapter === 1;
+  const nextDisabled =
+    isNextDisabled ??
+    (selectedChapter === totalChapters || totalChapters === 0);
 
   // Group books by testament
   const oldTestament = bibleStructure.books.slice(0, 39);
@@ -104,19 +158,19 @@ const BookSelector = ({
         <div className="chapter-display-wrapper">
           <div className="book-dropdown" ref={bookDropdownRef}>
             <button
+              ref={bookTriggerRef}
               className={`chapter-display-button book-selector-btn ${
                 showBooks ? "active" : ""
               }`}
               onClick={() => setShowBooks(!showBooks)}
-              title="Click to change book"
+              title={`Change book, current book ${localizedBookName}`}
+              aria-label={`Choose Bible book, current book ${localizedBookName}`}
               aria-expanded={showBooks}
+              aria-haspopup="dialog"
+              aria-controls={bookMenuId}
             >
               <div className="book-title-section">
-                <div className="book-title">
-                  {selectedBook
-                    ? getBookName(selectedBook, selectedTranslation)
-                    : "Select Book"}
-                </div>
+                <div className="book-title">{localizedBookName}</div>
                 <div className="clickable-indicator">
                   <svg
                     className="chevron-icon"
@@ -133,15 +187,25 @@ const BookSelector = ({
             </button>
 
             {showBooks && (
-              <div className="dropdown-menu book-menu">
+              <div
+                className="dropdown-menu book-menu"
+                id={bookMenuId}
+                role="dialog"
+                aria-label="Choose a Bible book"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.stopPropagation();
+                    closeBookMenu(true);
+                  }
+                }}
+              >
                 <div className="menu-header">
-                  <h3>Choose a Book</h3>
+                  <h3 ref={bookMenuHeadingRef} tabIndex={-1}>
+                    Choose a Book
+                  </h3>
                   <button
                     className="close-button"
-                    onClick={() => {
-                      setShowBooks(false);
-                      setSearchQuery("");
-                    }}
+                    onClick={() => closeBookMenu(true)}
                     aria-label="Close menu"
                   >
                     <svg
@@ -156,6 +220,9 @@ const BookSelector = ({
                   </button>
                 </div>
                 <div className="book-search-container">
+                  <label className="visually-hidden" htmlFor={bookSearchId}>
+                    Search books
+                  </label>
                   <svg
                     className="search-icon"
                     viewBox="0 0 24 24"
@@ -167,6 +234,7 @@ const BookSelector = ({
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                   <input
+                    id={bookSearchId}
                     ref={searchInputRef}
                     type="text"
                     className="book-search-input"
@@ -177,7 +245,10 @@ const BookSelector = ({
                   {searchQuery && (
                     <button
                       className="search-clear"
-                      onClick={() => setSearchQuery("")}
+                      onClick={() => {
+                        setSearchQuery("");
+                        searchInputRef.current?.focus();
+                      }}
                       aria-label="Clear search"
                     >
                       <svg
@@ -198,6 +269,7 @@ const BookSelector = ({
                       <button
                         className="section-header sticky-header collapsible"
                         onClick={() => setShowOldTestament(!showOldTestament)}
+                        aria-expanded={showOldTestament}
                       >
                         <div className="section-header-left">
                           <span>
@@ -261,6 +333,7 @@ const BookSelector = ({
                       <button
                         className="section-header sticky-header collapsible"
                         onClick={() => setShowNewTestament(!showNewTestament)}
+                        aria-expanded={showNewTestament}
                       >
                         <div className="section-header-left">
                           <span>
@@ -332,88 +405,75 @@ const BookSelector = ({
 
           {selectedBook && (
             <div className="chapter-dropdown" ref={chapterDropdownRef}>
-              <button
-                className={`chapter-display-button chapter-selector-btn ${
-                  showChapters ? "active" : ""
-                }`}
-                onClick={() => setShowChapters(!showChapters)}
-                title="Click to jump to chapter"
-                aria-expanded={showChapters}
-              >
-                <div className="chapter-info-section">
-                  <div
-                    className={`chapter-nav-btn ${
-                      selectedChapter === 1 ? "disabled" : ""
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (selectedChapter > 1)
-                        handleChapterSelect(selectedChapter - 1);
-                    }}
-                    role="button"
-                    tabIndex={selectedChapter === 1 ? -1 : 0}
-                    aria-label="Previous Chapter"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (selectedChapter > 1)
-                          handleChapterSelect(selectedChapter - 1);
-                      }
-                    }}
-                  >
-                    ‹
+              <div className="chapter-control-group">
+                <button
+                  type="button"
+                  className="chapter-nav-btn"
+                  onClick={handlePreviousChapter}
+                  disabled={previousDisabled}
+                  aria-label="Previous chapter"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={`chapter-display-button chapter-selector-btn ${
+                    showChapters ? "active" : ""
+                  }`}
+                  onClick={() => setShowChapters(!showChapters)}
+                  title={`Choose chapter, current chapter ${selectedChapter} of ${totalChapters}`}
+                  aria-label={`Choose chapter, current chapter ${selectedChapter} of ${totalChapters}`}
+                  aria-expanded={showChapters}
+                  aria-haspopup="dialog"
+                  aria-controls={chapterMenuId}
+                >
+                  <div className="chapter-info-section">
+                    <div className="chapter-info">
+                      <span className="chapter-label">Chapter</span>
+                      <span className="chapter-number">{selectedChapter}</span>
+                      <span className="chapter-total">of {totalChapters}</span>
+                      <span className="chapter-compact-display">
+                        <span className="chapter-compact-label">Ch</span>
+                        <span className="current-chapter">
+                          {selectedChapter}
+                        </span>
+                        <span className="chapter-separator">/</span>
+                        <span className="total-chapters">{totalChapters}</span>
+                      </span>
+                    </div>
+                    <div className="clickable-indicator">
+                      <svg
+                        className="chevron-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                      </svg>
+                    </div>
                   </div>
-                  <div className="chapter-info">
-                    <span className="chapter-label">Chapter</span>
-                    <span className="chapter-number">{selectedChapter}</span>
-                    <span className="chapter-total">of {totalChapters}</span>
-                    <span className="chapter-compact-display">
-                      <span className="current-chapter">{selectedChapter}</span>
-                      <span className="chapter-separator">/</span>
-                      <span className="total-chapters">{totalChapters}</span>
-                    </span>
-                  </div>
-                  <div
-                    className={`chapter-nav-btn ${
-                      selectedChapter === totalChapters ? "disabled" : ""
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (selectedChapter < totalChapters)
-                        handleChapterSelect(selectedChapter + 1);
-                    }}
-                    role="button"
-                    tabIndex={selectedChapter === totalChapters ? -1 : 0}
-                    aria-label="Next Chapter"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (selectedChapter < totalChapters)
-                          handleChapterSelect(selectedChapter + 1);
-                      }
-                    }}
-                  >
-                    ›
-                  </div>
-                  <div className="clickable-indicator">
-                    <svg
-                      className="chevron-icon"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="6,9 12,15 18,9"></polyline>
-                    </svg>
-                  </div>
-                </div>
-                <div className="chapter-subtitle">Tap to jump chapters</div>
-              </button>
+                  <div className="chapter-subtitle">Tap to jump chapters</div>
+                </button>
+                <button
+                  type="button"
+                  className="chapter-nav-btn"
+                  onClick={handleNextChapter}
+                  disabled={nextDisabled}
+                  aria-label="Next chapter"
+                >
+                  ›
+                </button>
+              </div>
 
               {showChapters && (
-                <div className="dropdown-menu chapters-menu">
+                <div
+                  className="dropdown-menu chapters-menu"
+                  id={chapterMenuId}
+                  role="dialog"
+                  aria-label="Choose a chapter"
+                >
                   <div className="menu-header">
                     <h3>
                       Chapter {selectedChapter} of {totalChapters}
@@ -474,8 +534,12 @@ const BookSelector = ({
       <div className="selector-controls">
         <div className="book-dropdown" ref={bookDropdownRef}>
           <button
+            type="button"
             className="selector-button"
             onClick={() => setShowBooks(!showBooks)}
+            aria-expanded={showBooks}
+            aria-haspopup="dialog"
+            aria-controls={bookMenuId}
           >
             <span className="button-text">
               {selectedBook
@@ -486,7 +550,12 @@ const BookSelector = ({
           </button>
 
           {showBooks && (
-            <div className="dropdown-menu">
+            <div
+              className="dropdown-menu"
+              id={bookMenuId}
+              role="dialog"
+              aria-label="Choose a Bible book"
+            >
               <div className="testament-section">
                 <div className="section-header">
                   {getTestamentLabel("oldTestament", selectedTranslation)}
@@ -530,40 +599,45 @@ const BookSelector = ({
 
         {selectedBook && (
           <div className="chapter-dropdown" ref={chapterDropdownRef}>
-            <button
-              className="selector-button"
-              onClick={() => setShowChapters(!showChapters)}
-            >
+            <div className="chapter-control-group">
               <button
+                type="button"
                 className="chapter-nav-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (selectedChapter > 1)
-                    handleChapterSelect(selectedChapter - 1);
-                }}
-                disabled={selectedChapter === 1}
-                aria-label="Previous Chapter"
+                onClick={handlePreviousChapter}
+                disabled={previousDisabled}
+                aria-label="Previous chapter"
               >
                 ‹
               </button>
-              <span className="button-text">Chapter {selectedChapter}</span>
               <button
+                type="button"
+                className="selector-button chapter-selector-btn"
+                onClick={() => setShowChapters(!showChapters)}
+                aria-expanded={showChapters}
+                aria-haspopup="dialog"
+                aria-controls={chapterMenuId}
+              >
+                <span className="button-text">Chapter {selectedChapter}</span>
+                <span className="button-icon">›</span>
+              </button>
+              <button
+                type="button"
                 className="chapter-nav-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (selectedChapter < totalChapters)
-                    handleChapterSelect(selectedChapter + 1);
-                }}
-                disabled={selectedChapter === totalChapters}
-                aria-label="Next Chapter"
+                onClick={handleNextChapter}
+                disabled={nextDisabled}
+                aria-label="Next chapter"
               >
                 ›
               </button>
-              <span className="button-icon">›</span>
-            </button>
+            </div>
 
             {showChapters && (
-              <div className="dropdown-menu chapters-menu">
+              <div
+                className="dropdown-menu chapters-menu"
+                id={chapterMenuId}
+                role="dialog"
+                aria-label="Choose a chapter"
+              >
                 <div className="chapters-grid">
                   {Array.from({ length: totalChapters }, (_, i) => i + 1).map(
                     (chapterNum) => (

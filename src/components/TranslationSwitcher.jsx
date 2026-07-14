@@ -3,6 +3,7 @@ import React, {
   useRef,
   useEffect,
   useCallback,
+  useId,
   useMemo,
   useLayoutEffect,
 } from "react";
@@ -20,6 +21,10 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
   const [triggerRect, setTriggerRect] = useState(null);
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const triggerButtonRef = useRef(null);
+  const idPrefix = useId();
+  const dialogId = `${idPrefix}-translation-dialog`;
+  const dialogTitleId = `${idPrefix}-translation-title`;
 
   // Memoized translations array to prevent unnecessary re-renders
   const translations = useMemo(
@@ -119,10 +124,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
       !menuRef.current.contains(event.target)
     ) {
       setShowDropdown(false);
-      // Clean up CSS custom property
-      if (window.innerWidth <= 480) {
-        document.documentElement.style.removeProperty("--dropdown-top");
-      }
+      document.documentElement.style.removeProperty("--dropdown-top");
     }
   }, []);
 
@@ -148,6 +150,8 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
       if (translation) {
         onTranslationChange(translationId);
         setShowDropdown(false);
+        document.documentElement.style.removeProperty("--dropdown-top");
+        requestAnimationFrame(() => triggerButtonRef.current?.focus());
       }
     },
     [translations, onTranslationChange],
@@ -209,31 +213,71 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
 
   // Optimized dropdown toggle handler
   const toggleDropdown = useCallback(() => {
-    setShowDropdown((prev) => !prev);
+    setShowDropdown((prev) => {
+      if (prev) {
+        document.documentElement.style.removeProperty("--dropdown-top");
+      }
+      return !prev;
+    });
   }, []);
 
   // Optimized close dropdown handler
   const closeDropdown = useCallback(() => {
     setShowDropdown(false);
-    // Clean up CSS custom property
-    if (window.innerWidth <= 480) {
-      document.documentElement.style.removeProperty("--dropdown-top");
+    document.documentElement.style.removeProperty("--dropdown-top");
+    requestAnimationFrame(() => triggerButtonRef.current?.focus());
+  }, []);
+
+  const handleTriggerKeyDown = useCallback((e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setShowDropdown(true);
     }
   }, []);
 
-  // Keyboard navigation handler
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === "Escape") {
-      setShowDropdown(false);
-      // Clean up CSS custom property
-      if (window.innerWidth <= 480) {
-        document.documentElement.style.removeProperty("--dropdown-top");
+  useEffect(() => {
+    if (!showDropdown) return;
+
+    const focusMenu = requestAnimationFrame(() => {
+      const initialTarget =
+        menuRef.current?.querySelector(".translation-item.active") ||
+        menuRef.current?.querySelector("button");
+      initialTarget?.focus();
+    });
+
+    return () => cancelAnimationFrame(focusMenu);
+  }, [showDropdown]);
+
+  const handleDialogKeyDown = useCallback(
+    (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDropdown();
+        return;
       }
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setShowDropdown((prev) => !prev);
-    }
-  }, []);
+
+      if (event.key !== "Tab" || !menuRef.current) return;
+
+      const focusableElements = Array.from(
+        menuRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusableElements.length === 0) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    },
+    [closeDropdown],
+  );
 
   // Toggle category expansion/collapse
   const toggleCategory = useCallback((category) => {
@@ -275,6 +319,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
             className="category-header"
             onClick={() => toggleCategory(category)}
             aria-expanded={expandedCategories[category]}
+            aria-controls={`${idPrefix}-${category.toLowerCase()}-translations`}
           >
             <div className="category-info">
               <span className="category-name">{category}</span>
@@ -296,7 +341,12 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
             </svg>
           </button>
           {expandedCategories[category] && (
-            <div className="category-translations">
+            <div
+              className="category-translations"
+              id={`${idPrefix}-${category.toLowerCase()}-translations`}
+              role="group"
+              aria-label={`${category} translations`}
+            >
               {categoryTranslations.map((translation) => (
                 <button
                   key={translation.id}
@@ -339,16 +389,19 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
     handleTranslationSelect,
     expandedCategories,
     toggleCategory,
+    idPrefix,
   ]);
 
   return (
     <div className="translation-switcher" ref={dropdownRef}>
       <button
+        ref={triggerButtonRef}
         className={`translation-button ${showDropdown ? "active" : ""}`}
         onClick={toggleDropdown}
-        onKeyDown={handleKeyDown}
+        onKeyDown={handleTriggerKeyDown}
         aria-expanded={showDropdown}
-        aria-haspopup="true"
+        aria-haspopup="dialog"
+        aria-controls={dialogId}
         title="Choose Bible translation"
       >
         <div className="translation-info">
@@ -377,6 +430,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
             className={`translation-dropdown ${
               dropdownPosition === "up" ? "position-up" : ""
             }`}
+            id={dialogId}
             style={{
               "--trigger-top": `${triggerRect?.top}px`,
               "--trigger-bottom": `${triggerRect?.bottom}px`,
@@ -387,11 +441,14 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
               "--trigger-width": `${triggerRect?.width}px`,
               "--trigger-height": `${triggerRect?.height}px`,
             }}
-            role="menu"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={dialogTitleId}
             ref={menuRef}
+            onKeyDown={handleDialogKeyDown}
           >
             <div className="dropdown-header">
-              <h3>Bible Translations</h3>
+              <h3 id={dialogTitleId}>Bible Translations</h3>
               <button
                 className="close-button"
                 onClick={closeDropdown}
@@ -410,9 +467,7 @@ const TranslationSwitcher = ({ selectedTranslation, onTranslationChange }) => {
                 </svg>
               </button>
             </div>
-            <div className="translations-list" role="menubar">
-              {translationItems}
-            </div>
+            <div className="translations-list">{translationItems}</div>
           </div>,
           document.body,
         )}

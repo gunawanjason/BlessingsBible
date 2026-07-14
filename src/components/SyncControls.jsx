@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useId, useRef } from "react";
 import ReactDOM from "react-dom";
 import PropTypes from "prop-types";
 import "./SyncControls.css";
@@ -14,6 +14,8 @@ const SyncControls = ({
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [menuCoords, setMenuCoords] = useState(null);
   const addBtnRef = useRef(null);
+  const menuRef = useRef(null);
+  const menuId = `${useId()}-translation-menu`;
 
   const availableTranslations = [
     "TB",
@@ -46,6 +48,7 @@ const SyncControls = ({
     (translation) => {
       onAddTranslation(translation);
       setShowAddMenu(false);
+      requestAnimationFrame(() => addBtnRef.current?.focus());
     },
     [onAddTranslation],
   );
@@ -77,12 +80,60 @@ const SyncControls = ({
     };
   }, [showAddMenu]);
 
+  useEffect(() => {
+    if (!showAddMenu) return;
+
+    const focusMenu = requestAnimationFrame(() => {
+      menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+    });
+
+    return () => cancelAnimationFrame(focusMenu);
+  }, [showAddMenu]);
+
+  const handleMenuKeyDown = useCallback((event) => {
+    if (!menuRef.current) return;
+
+    const items = Array.from(
+      menuRef.current.querySelectorAll('[role="menuitem"]'),
+    );
+    const currentIndex = items.indexOf(document.activeElement);
+    let nextIndex = currentIndex;
+
+    if (event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % items.length;
+    } else if (event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + items.length) % items.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = items.length - 1;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setShowAddMenu(false);
+      requestAnimationFrame(() => addBtnRef.current?.focus());
+      return;
+    } else if (event.key === "Tab") {
+      setShowAddMenu(false);
+      return;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  }, []);
+
   // Portal dropdown — escapes any overflow:auto container
   const menu =
     showAddMenu && menuCoords
       ? ReactDOM.createPortal(
           <div
             className="translation-menu"
+            id={menuId}
+            ref={menuRef}
+            role="menu"
+            aria-label="Available translations"
+            onKeyDown={handleMenuKeyDown}
             style={{
               position: "fixed",
               // Open downward from the button's bottom edge
@@ -96,6 +147,7 @@ const SyncControls = ({
                 key={translation}
                 className="menu-item"
                 onClick={() => handleAddClick(translation)}
+                role="menuitem"
               >
                 {translation}
               </button>
@@ -117,7 +169,12 @@ const SyncControls = ({
             syncEnabled ? "Disable selection sync" : "Enable selection sync"
           }
         >
-          <svg viewBox="0 0 24 24" fill="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+            focusable="false"
+          >
             {syncEnabled ? (
               <g>
                 <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
@@ -157,12 +214,21 @@ const SyncControls = ({
                 : `Remove ${translation}`
             }
             disabled={index === 0}
+            aria-label={
+              index === 0
+                ? `${translation}, synced with main translation`
+                : `Remove ${translation}`
+            }
           >
             {translation}
             {index === 0 ? (
-              <span className="sync-icon">🔗</span>
+              <span className="sync-icon" aria-hidden="true">
+                🔗
+              </span>
             ) : (
-              <span className="remove-icon">×</span>
+              <span className="remove-icon" aria-hidden="true">
+                ×
+              </span>
             )}
           </button>
         ))}
@@ -174,6 +240,9 @@ const SyncControls = ({
               className="add-translation"
               onClick={handleToggleMenu}
               title="Add translation"
+              aria-expanded={showAddMenu}
+              aria-haspopup="menu"
+              aria-controls={menuId}
             >
               + Add
             </button>

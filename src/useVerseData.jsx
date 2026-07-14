@@ -1,4 +1,4 @@
-import { useContext, useMemo } from "react";
+import { useMemo } from "react";
 import VerseContext from "./VerseContext";
 
 export function VerseProvider({ children, value }) {
@@ -7,8 +7,4 @@ export function VerseProvider({ children, value }) {
   return (
     <VerseContext.Provider value={memoValue}>{children}</VerseContext.Provider>
   );
-}
-
-export function useVerseData() {
-  return useContext(VerseContext);
 }

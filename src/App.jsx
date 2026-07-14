@@ -7,8 +7,13 @@ import VerseComparisonPanel from "./components/VerseComparisonPanel";
 import SyncControls from "./components/SyncControls";
 import ShareButton from "./components/ShareButton";
 import { fetchVerses } from "./services/bibleApi";
-import { getBookName } from "./utils/translationMappings";
-import { parseUrlParams, generateShareUrl } from "./utils/urlUtils";
+import { BOOK_TRANSLATIONS, getBookName } from "./utils/translationMappings";
+import {
+  parseUrlParams,
+  generateShareUrl,
+  updateUrl,
+  validateUrlParams,
+} from "./utils/urlUtils";
 import { VerseProvider } from "./useVerseData";
 import "./styles/index.css";
 import { sendPageView, sendEvent } from "./utils/ga";
@@ -54,15 +59,21 @@ const CopyProgressIcon = () => (
   </svg>
 );
 
+const readStoredDarkMode = () => {
+  try {
+    const saved = localStorage.getItem("darkMode");
+    return saved === null ? false : JSON.parse(saved) === true;
+  } catch {
+    return false;
+  }
+};
+
 function App() {
   const [selectedBook, setSelectedBook] = useState("John");
   const [selectedChapter, setSelectedChapter] = useState(1);
   const [viewMode, setViewMode] = useState("reader");
   const [selectedTranslation, setSelectedTranslation] = useState("TB");
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const saved = localStorage.getItem("darkMode");
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [isDarkMode, setIsDarkMode] = useState(readStoredDarkMode);
 
   // Apply dark mode class to document
   useEffect(() => {
@@ -70,7 +81,11 @@ function App() {
       "data-theme",
       isDarkMode ? "dark" : "light",
     );
-    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+    try {
+      localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+    } catch {
+      // The selected theme still applies when storage is unavailable.
+    }
   }, [isDarkMode]);
 
   const [verses, setVerses] = useState([]);
@@ -96,6 +111,9 @@ function App() {
   const mobileMenuRef = useRef(null);
   const chapterVersesRef = useRef([]);
   const navRef = useRef(null);
+  const dataRequestControllerRef = useRef(null);
+  const dataRequestIdRef = useRef(0);
+  const [urlReady, setUrlReady] = useState(false);
 
   // Dynamically update --nav-height based on actual nav element height
   useEffect(() => {
@@ -145,31 +163,90 @@ function App() {
 
   // Load Bible structure data
   useEffect(() => {
+    const controller = new AbortController();
     const loadBibleStructure = async () => {
       try {
-        const response = await fetch("/bible-structure.json");
+        const response = await fetch("/bible-structure.json", {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Bible metadata request failed (${response.status})`);
+        }
         const data = await response.json();
         setBibleStructure(data);
       } catch (err) {
-        console.error("Failed to load Bible structure:", err);
+        if (err.name !== "AbortError") {
+          console.error("Failed to load Bible structure:", err);
+          setError(
+            "Unable to load Bible metadata. Please refresh and try again.",
+          );
+        }
       }
     };
     loadBibleStructure();
+    return () => controller.abort();
   }, []);
 
-  // Parse URL parameters on initial load
-  useEffect(() => {
-    const urlParams = parseUrlParams();
-    if (urlParams.book && urlParams.chapter && urlParams.translation) {
-      setSelectedBook(urlParams.book);
-      setSelectedChapter(urlParams.chapter);
-      setSelectedTranslation(urlParams.translation);
+  const applyUrlState = useCallback(() => {
+    if (!bibleStructure) return;
 
-      if (urlParams.verses.size > 0) {
-        setSelectedVerses(urlParams.verses);
-      }
+    const rawParams = parseUrlParams();
+    const validatedParams = validateUrlParams(
+      rawParams,
+      bibleStructure,
+      Object.keys(BOOK_TRANSLATIONS),
+    );
+
+    if (validatedParams) {
+      setSelectedBook(validatedParams.book);
+      setSelectedChapter(validatedParams.chapter);
+      setSelectedTranslation(validatedParams.translation);
+      setSelectedVerses(validatedParams.verses);
+      setHighlightedVerse(null);
+      setError(null);
+    } else {
+      setSelectedBook("John");
+      setSelectedChapter(1);
+      setSelectedTranslation("TB");
+      setSelectedVerses(new Set());
+      setHighlightedVerse(null);
+      setError(
+        rawParams.book ||
+          rawParams.chapter ||
+          rawParams.translation ||
+          rawParams.verses.size > 0
+          ? "This shared passage link is invalid. Showing John chapter 1 instead."
+          : null,
+      );
     }
-  }, []);
+
+    setUrlReady(true);
+  }, [bibleStructure]);
+
+  // Hydrate shared reading state after metadata is available and support history navigation.
+  useEffect(() => {
+    if (!bibleStructure) return;
+    applyUrlState();
+    window.addEventListener("popstate", applyUrlState);
+    return () => window.removeEventListener("popstate", applyUrlState);
+  }, [applyUrlState, bibleStructure]);
+
+  // Keep the address bar in sync with the current passage and selected verses.
+  useEffect(() => {
+    if (!urlReady) return;
+    updateUrl(
+      selectedBook,
+      selectedChapter,
+      selectedTranslation,
+      selectedVerses,
+    );
+  }, [
+    urlReady,
+    selectedBook,
+    selectedChapter,
+    selectedTranslation,
+    selectedVerses,
+  ]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
@@ -189,6 +266,58 @@ function App() {
     };
   }, [showMobileMenu]);
 
+  const beginDataRequest = useCallback(() => {
+    dataRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    dataRequestControllerRef.current = controller;
+    return { controller, requestId: ++dataRequestIdRef.current };
+  }, []);
+
+  const handleBookChange = useCallback((bookName) => {
+    dataRequestControllerRef.current?.abort();
+    setSelectedBook(bookName);
+    setHighlightedVerse(null);
+    setSelectedVerses(new Set());
+    setComparisonSelectedVerses(new Set());
+    setComparisonIndependentSelections({});
+    setVerses([]);
+    setLoading(false);
+    setError(null);
+    sendEvent({
+      action: "book_change",
+      category: "navigation",
+      label: bookName,
+    });
+  }, []);
+
+  const handleChapterChange = useCallback(
+    (chapterNumber, bookName = null) => {
+      dataRequestControllerRef.current?.abort();
+      setSelectedChapter(Number(chapterNumber));
+      if (bookName) {
+        setSelectedBook(bookName);
+        sendEvent({
+          action: "book_change",
+          category: "navigation",
+          label: bookName,
+        });
+      }
+      sendEvent({
+        action: "chapter_change",
+        category: "navigation",
+        label: `${bookName || selectedBook} ${chapterNumber}`,
+      });
+      setHighlightedVerse(null);
+      setSelectedVerses(new Set());
+      setComparisonSelectedVerses(new Set());
+      setComparisonIndependentSelections({});
+      setVerses([]);
+      setLoading(false);
+      setError(null);
+    },
+    [selectedBook],
+  );
+
   // Navigation handlers
   const handlePreviousChapter = useCallback(() => {
     sendEvent({
@@ -207,7 +336,7 @@ function App() {
         handleChapterChange(previousBook.chapters, previousBook.name);
       }
     }
-  }, [selectedChapter, selectedBook, bibleStructure]);
+  }, [selectedChapter, selectedBook, bibleStructure, handleChapterChange]);
 
   const handleNextChapter = useCallback(() => {
     sendEvent({
@@ -231,26 +360,33 @@ function App() {
         handleChapterChange(1, nextBook.name);
       }
     }
-  }, [selectedChapter, selectedBook, bibleStructure]);
+  }, [selectedChapter, selectedBook, bibleStructure, handleChapterChange]);
 
   const handleVerseSearch = async (verseReference) => {
+    const { controller, requestId } = beginDataRequest();
     setLoading(true);
     setError(null);
     try {
       const fetchedVerses = await fetchVerses(
         selectedTranslation,
         verseReference,
+        { signal: controller.signal },
       );
+
+      if (controller.signal.aborted || dataRequestIdRef.current !== requestId) {
+        return;
+      }
 
       if (fetchedVerses.length > 0) {
         const firstVerse = fetchedVerses[0];
         setSelectedBook(firstVerse.book);
-        setSelectedChapter(firstVerse.chapter);
+        setSelectedChapter(Number(firstVerse.chapter));
+        setSelectedVerses(new Set());
 
         const hasVerseNumber = verseReference.includes(":");
         if (hasVerseNumber) {
           setHighlightedVerse({
-            verse: firstVerse.verse,
+            verse: Number(firstVerse.verse),
             count: fetchedVerses.length,
           });
         } else {
@@ -266,15 +402,28 @@ function App() {
 
       setVerses(fetchedVerses);
     } catch (err) {
-      setError(err.message || "Failed to fetch verses");
-      setVerses([]);
+      if (
+        err.name !== "AbortError" &&
+        !controller.signal.aborted &&
+        dataRequestIdRef.current === requestId
+      ) {
+        setError(err.message || "Failed to fetch verses");
+        setVerses([]);
+      }
     } finally {
-      setLoading(false);
+      if (
+        !controller.signal.aborted &&
+        dataRequestIdRef.current === requestId
+      ) {
+        setLoading(false);
+      }
     }
   };
 
   const handleTranslationChange = async (translation) => {
+    const { controller, requestId } = beginDataRequest();
     setSelectedTranslation(translation);
+    setError(null);
     sendEvent({
       action: "translation_change",
       category: "engagement",
@@ -291,43 +440,35 @@ function App() {
                 verses[verses.length - 1].verse
               }`;
 
-        const fetchedVerses = await fetchVerses(translation, reference);
+        const fetchedVerses = await fetchVerses(translation, reference, {
+          signal: controller.signal,
+        });
+        if (
+          controller.signal.aborted ||
+          dataRequestIdRef.current !== requestId
+        ) {
+          return;
+        }
         setVerses(fetchedVerses);
       } catch (err) {
-        setError(err.message || "Failed to fetch verses in new translation");
+        if (
+          err.name !== "AbortError" &&
+          !controller.signal.aborted &&
+          dataRequestIdRef.current === requestId
+        ) {
+          setError(err.message || "Failed to fetch verses in new translation");
+        }
       } finally {
-        setLoading(false);
+        if (
+          !controller.signal.aborted &&
+          dataRequestIdRef.current === requestId
+        ) {
+          setLoading(false);
+        }
       }
+    } else if (dataRequestIdRef.current === requestId) {
+      setLoading(false);
     }
-  };
-
-  const handleBookChange = (bookName) => {
-    setSelectedBook(bookName);
-    sendEvent({
-      action: "book_change",
-      category: "navigation",
-      label: bookName,
-    });
-  };
-
-  const handleChapterChange = (chapterNumber, bookName = null) => {
-    setSelectedChapter(chapterNumber);
-    if (bookName) {
-      setSelectedBook(bookName);
-      sendEvent({
-        action: "book_change",
-        category: "navigation",
-        label: bookName,
-      });
-    }
-    sendEvent({
-      action: "chapter_change",
-      category: "navigation",
-      label: `${bookName || selectedBook} ${chapterNumber}`,
-    });
-    setHighlightedVerse(null);
-    setVerses([]);
-    setError(null);
   };
 
   // Sync first comparison translation with selectedTranslation
@@ -539,6 +680,27 @@ function App() {
     });
   };
 
+  const handleViewTabKeyDown = (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    let nextMode = viewMode;
+    if (event.key === "ArrowLeft" || event.key === "Home") {
+      nextMode = "reader";
+    } else if (event.key === "ArrowRight" || event.key === "End") {
+      nextMode = "comparison";
+    }
+    setViewMode(nextMode);
+    requestAnimationFrame(() => {
+      document.getElementById(`${nextMode}-tab`)?.focus();
+    });
+  };
+
+  useEffect(() => {
+    return () => dataRequestControllerRef.current?.abort();
+  }, []);
 
   // Context value for verse data
   const verseContextValue = {
@@ -606,20 +768,31 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="view-tab-bar" role="tablist">
+          <div className="view-tab-bar">
             <div className="view-tab-bar-inner">
-              <div className="tab-bar-tabs">
+              <div
+                className="tab-bar-tabs"
+                role="tablist"
+                aria-label="Bible view"
+                onKeyDown={handleViewTabKeyDown}
+              >
                 <button
+                  id="reader-tab"
                   role="tab"
                   aria-selected={viewMode === "reader"}
+                  aria-controls="reader-panel"
+                  tabIndex={viewMode === "reader" ? 0 : -1}
                   className={`view-tab ${viewMode === "reader" ? "active" : ""}`}
                   onClick={() => setViewMode("reader")}
                 >
                   Reader
                 </button>
                 <button
+                  id="comparison-tab"
                   role="tab"
                   aria-selected={viewMode === "comparison"}
+                  aria-controls="comparison-panel"
+                  tabIndex={viewMode === "comparison" ? 0 : -1}
                   className={`view-tab ${viewMode === "comparison" ? "active" : ""}`}
                   onClick={() => {
                     setViewMode("comparison");
@@ -655,6 +828,14 @@ function App() {
                   onClick={copySelectedVerses}
                   className={`copy-button ${copyState}`}
                   disabled={copyState === "copying"}
+                  aria-live="polite"
+                  aria-label={
+                    copyState === "copied"
+                      ? "Selected verses copied"
+                      : copyState === "copying"
+                        ? "Copying selected verses"
+                        : `Copy ${totalSelections} selected verse${totalSelections === 1 ? "" : "s"}`
+                  }
                   title={`Copy ${totalSelections} selected verse${
                     totalSelections > 1 ? "s" : ""
                   }`}
@@ -680,9 +861,13 @@ function App() {
           </div>
         </nav>
 
-        {loading && <div className="status-bar loading">Loading verses…</div>}
+        {loading && (
+          <div className="status-bar loading" role="status" aria-live="polite">
+            Loading verses…
+          </div>
+        )}
         {error && (
-          <div className="status-bar error">
+          <div className="status-bar error" role="alert">
             {error === "Failed to fetch verses"
               ? "Unable to load verses. Check your connection and try again, or select a different chapter."
               : error}
@@ -691,36 +876,39 @@ function App() {
 
         <main className="app-main">
           {viewMode === "reader" ? (
-            <ChapterReader
-              selectedBook={selectedBook}
-              selectedChapter={selectedChapter}
-              onBookChange={handleBookChange}
-              onChapterChange={handleChapterChange}
-              bibleStructure={bibleStructure}
-              highlightedVerse={highlightedVerse}
-              selectedTranslation={selectedTranslation}
-              selectedVerses={selectedVerses}
-              setSelectedVerses={setSelectedVerses}
-              showCopyInNav={true}
-              chapterVersesRef={chapterVersesRef}
-            />
+            <div id="reader-panel" role="tabpanel" aria-labelledby="reader-tab">
+              <ChapterReader
+                selectedBook={selectedBook}
+                selectedChapter={selectedChapter}
+                bibleStructure={bibleStructure}
+                highlightedVerse={highlightedVerse}
+                selectedTranslation={selectedTranslation}
+                selectedVerses={selectedVerses}
+                setSelectedVerses={setSelectedVerses}
+                chapterVersesRef={chapterVersesRef}
+              />
+            </div>
           ) : (
-            <VerseComparisonPanel
-              selectedBook={selectedBook}
-              selectedChapter={selectedChapter}
-              bibleStructure={bibleStructure}
-              highlightedVerse={highlightedVerse}
-              selectedTranslation={selectedTranslation}
-              selectedVerses={comparisonSelectedVerses}
-              setSelectedVerses={setComparisonSelectedVerses}
-              independentSelections={comparisonIndependentSelections}
-              setIndependentSelections={setComparisonIndependentSelections}
-              syncEnabled={comparisonSyncEnabled}
-              setSyncEnabled={setComparisonSyncEnabled}
-              showCopyInNav={true}
-              translations={comparisonTranslations}
-              removingTranslations={comparisonRemovingTranslations}
-            />
+            <div
+              id="comparison-panel"
+              role="tabpanel"
+              aria-labelledby="comparison-tab"
+            >
+              <VerseComparisonPanel
+                selectedBook={selectedBook}
+                selectedChapter={selectedChapter}
+                bibleStructure={bibleStructure}
+                highlightedVerse={highlightedVerse}
+                selectedVerses={comparisonSelectedVerses}
+                setSelectedVerses={setComparisonSelectedVerses}
+                independentSelections={comparisonIndependentSelections}
+                setIndependentSelections={setComparisonIndependentSelections}
+                syncEnabled={comparisonSyncEnabled}
+                showCopyInNav={true}
+                translations={comparisonTranslations}
+                removingTranslations={comparisonRemovingTranslations}
+              />
+            </div>
           )}
         </main>
       </div>

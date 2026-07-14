@@ -243,15 +243,14 @@
 
 @media (max-width: 768px) {
   .translation-button {
-    padding: 0 10px;
-    height: 40px;
-    min-height: 40px;
-    min-width: 70px;
-    font-size: 13px;
+    height: 44px;
+    min-height: 44px;
+    min-width: 56px;
+    padding: 0 8px;
   }
 
   .translation-name {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .translation-label {
@@ -272,91 +271,17 @@
     max-height: calc(min(50vh, calc(100vh - 180px)) - 80px);
     padding: var(--spacing-md, 16px);
   }
+
+  .translation-dropdown .close-button,
+  .category-header {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 480px) {
   .translation-switcher {
     flex-shrink: 0;
-  }
-
-  .translation-button {
-    padding: 0 6px;
-    height: 34px;
-    min-height: 34px;
-    min-width: 50px;
-    font-size: 11px;
-  }
-
-  .translation-name {
-    font-size: 11px;
-  }
-
-  .translation-indicator {
-    width: 14px;
-    height: 14px;
-  }
-
-  .chevron-icon {
-    width: 7px;
-    height: 7px;
-  }
-}
-
-/* iPhone SE: ≤375px */
-@media (max-width: 375px) {
-  .translation-switcher {
-    flex-shrink: 0;
-  }
-
-  .translation-button {
-    padding: 0 5px;
-    height: 32px;
-    min-height: 32px;
-    min-width: 44px;
-    font-size: 10px;
-  }
-
-  .translation-name {
-    font-size: 10px;
-  }
-
-  .translation-indicator {
-    width: 13px;
-    height: 13px;
-  }
-
-  .chevron-icon {
-    width: 6px;
-    height: 6px;
-  }
-}
-
-/* Tiny mobile: ≤360px */
-@media (max-width: 360px) {
-  .translation-switcher {
-    flex-shrink: 0;
-  }
-
-  .translation-button {
-    padding: 0 4px;
-    height: 30px;
-    min-height: 30px;
-    min-width: 40px;
-    font-size: 9px;
-  }
-
-  .translation-name {
-    font-size: 9px;
-  }
-
-  .translation-indicator {
-    width: 12px;
-    height: 12px;
-  }
-
-  .chevron-icon {
-    width: 5px;
-    height: 5px;
   }
 }
 
@@ -482,7 +407,7 @@
 
 .translation-item.active {
   background: var(--primary-color, #a0782c);
-  color: white;
+  color: var(--color-on-accent);
   font-weight: 600;
 }
 
@@ -512,7 +437,7 @@
 }
 
 .translation-item.active .short-name {
-  color: white;
+  color: var(--color-on-accent);
 }
 
 .full-name {
@@ -537,7 +462,7 @@
 .check-icon {
   width: 16px;
   height: 16px;
-  color: white;
+  color: var(--color-on-accent);
   stroke-width: 2.5;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -558,6 +483,11 @@
 .translation-item:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 1px;
+}
+
+.category-header:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .close-button:focus-visible {

@@ -34,7 +34,6 @@ const ChapterReader = ({
   const abortControllerRef = useRef(null);
   const fetchIdRef = useRef(0);
   const skeletonDelayRef = useRef(null);
-  const skeletonShownAtRef = useRef(null);
 
   // Memoize current book calculation
   const currentBook = useMemo(
@@ -42,14 +41,26 @@ const ChapterReader = ({
     [bibleStructure, selectedBook],
   );
 
-  // Skeleton timing: delay showing to avoid flash on fast loads,
-  // and enforce a minimum visible duration once it does appear.
+  const hasValidSelection =
+    currentBook &&
+    Number.isInteger(Number(selectedChapter)) &&
+    Number(selectedChapter) >= 1 &&
+    Number(selectedChapter) <= currentBook.chapters;
+
+  // Delay the skeleton to avoid flashing it for cache hits and fast requests.
   const SKELETON_SHOW_DELAY = 150;
-  const SKELETON_MIN_VISIBLE = 300;
 
   // Optimized fetch function with abort controller
   const fetchChapterVerses = useCallback(async () => {
-    if (!selectedBook || !selectedChapter || !currentBook) return;
+    if (!bibleStructure) return;
+    if (!selectedBook || !selectedChapter || !hasValidSelection) {
+      setChapterVerses([]);
+      setHeadings([]);
+      setShowSkeleton(false);
+      setLoading(false);
+      setError("The selected book or chapter is not available.");
+      return;
+    }
 
     // Cancel previous request
     if (abortControllerRef.current) {
@@ -67,35 +78,41 @@ const ChapterReader = ({
     setLoading(true);
     setError(null);
 
-    // When the chapter is already cached, skip the flash-avoidance delay and
-    // show the skeleton right away so users see the same loading affordance
-    // on every navigation — then let the min-visible timer gate the render.
     const cacheHit = hasCachedChapter(
       selectedTranslation,
       selectedBook,
       selectedChapter,
     );
 
-    skeletonShownAtRef.current = null;
     if (cacheHit) {
-      skeletonShownAtRef.current = Date.now();
-      setShowSkeleton(true);
+      setShowSkeleton(false);
     } else {
+      setChapterVerses([]);
+      setHeadings([]);
       skeletonDelayRef.current = setTimeout(() => {
         if (fetchIdRef.current === fetchId) {
-          skeletonShownAtRef.current = Date.now();
           setShowSkeleton(true);
         }
       }, SKELETON_SHOW_DELAY);
     }
 
     try {
-      const [versesRes, headingsRes] = await Promise.all([
-        fetchChapterCached(selectedTranslation, selectedBook, selectedChapter),
-        fetchHeadingsCached(selectedTranslation, selectedBook, selectedChapter),
-      ]);
+      const requestOptions = {
+        signal: abortControllerRef.current.signal,
+      };
+      const headingsPromise = fetchHeadingsCached(
+        selectedTranslation,
+        selectedBook,
+        selectedChapter,
+        requestOptions,
+      ).catch(() => ({ data: [], fromCache: false }));
+      const versesRes = await fetchChapterCached(
+        selectedTranslation,
+        selectedBook,
+        selectedChapter,
+        requestOptions,
+      );
       const verses = versesRes.data;
-      const headingsData = headingsRes.data;
 
       if (
         abortControllerRef.current?.signal.aborted ||
@@ -109,31 +126,20 @@ const ChapterReader = ({
         text: verse.text,
       }));
 
-      const applyData = () => {
-        if (fetchIdRef.current !== fetchId) return;
-        setChapterVerses(transformedVerses);
-        setHeadings(headingsData);
-        setShowSkeleton(false);
-        skeletonShownAtRef.current = null;
-      };
+      if (skeletonDelayRef.current) {
+        clearTimeout(skeletonDelayRef.current);
+        skeletonDelayRef.current = null;
+      }
+      setChapterVerses(transformedVerses);
+      setShowSkeleton(false);
 
-      // If skeleton never showed (fast load), cancel the pending show
-      // and render immediately. If it did show, keep it up long enough
-      // to avoid flicker.
-      if (skeletonShownAtRef.current === null) {
-        if (skeletonDelayRef.current) {
-          clearTimeout(skeletonDelayRef.current);
-          skeletonDelayRef.current = null;
-        }
-        applyData();
-      } else {
-        const elapsed = Date.now() - skeletonShownAtRef.current;
-        const remaining = Math.max(0, SKELETON_MIN_VISIBLE - elapsed);
-        if (remaining === 0) {
-          applyData();
-        } else {
-          setTimeout(applyData, remaining);
-        }
+      // Headings are optional metadata and should not delay cached verse text.
+      const headingsRes = await headingsPromise;
+      if (
+        !abortControllerRef.current?.signal.aborted &&
+        fetchIdRef.current === fetchId
+      ) {
+        setHeadings(headingsRes.data);
       }
     } catch (err) {
       if (
@@ -157,7 +163,13 @@ const ChapterReader = ({
         setLoading(false);
       }
     }
-  }, [selectedBook, selectedChapter, currentBook, selectedTranslation]);
+  }, [
+    bibleStructure,
+    selectedBook,
+    selectedChapter,
+    hasValidSelection,
+    selectedTranslation,
+  ]);
 
   // Fetch chapter verses with cleanup
   useEffect(() => {
@@ -208,22 +220,20 @@ const ChapterReader = ({
   }, [highlightedVerse, chapterVerses]);
 
   // Handle verse selection
-  const handleVerseClick = useCallback((verseNumber) => {
-    setSelectedVerses((prev) => {
-      const newSelected = new Set(prev);
-      if (newSelected.has(verseNumber)) {
-        newSelected.delete(verseNumber);
-      } else {
-        newSelected.add(verseNumber);
-      }
-      return newSelected;
-    });
-  }, []);
-
-  // Clear selections when chapter changes
-  useEffect(() => {
-    setSelectedVerses(new Set());
-  }, [selectedBook, selectedChapter, setSelectedVerses]);
+  const handleVerseClick = useCallback(
+    (verseNumber) => {
+      setSelectedVerses((prev) => {
+        const newSelected = new Set(prev);
+        if (newSelected.has(verseNumber)) {
+          newSelected.delete(verseNumber);
+        } else {
+          newSelected.add(verseNumber);
+        }
+        return newSelected;
+      });
+    },
+    [setSelectedVerses],
+  );
 
   // Memoized verse components for better performance
   const verseComponents = useMemo(() => {
@@ -257,6 +267,12 @@ const ChapterReader = ({
             }`}
             id={`verse-${verseNumber}`}
             onClick={() => handleVerseClick(verseNumber)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleVerseClick(verseNumber);
+              }
+            }}
             role="button"
             tabIndex={0}
             aria-pressed={isSelected}
@@ -290,7 +306,7 @@ const ChapterReader = ({
 
   return (
     <div className="chapter-reader">
-      <main className="chapter-content">
+      <section className="chapter-content" aria-label="Bible chapter">
         {showSkeleton && !error && (
           <div
             className="verses-container"
@@ -339,9 +355,10 @@ const ChapterReader = ({
         )}
 
         {error && (
-          <div className="status-message error">
-            Unable to load this chapter. Please check your connection and try
-            again.
+          <div className="status-message error" role="alert">
+            {error === "The selected book or chapter is not available."
+              ? error
+              : "Unable to load this chapter. Please check your connection and try again."}
           </div>
         )}
 
@@ -356,7 +373,7 @@ const ChapterReader = ({
             No verses found for this chapter. Try selecting a different chapter.
           </div>
         )}
-      </main>
+      </section>
       <ScrollToTop />
     </div>
   );

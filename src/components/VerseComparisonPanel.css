@@ -244,13 +244,18 @@
 @keyframes column-exit {
   from {
     opacity: 1;
-    max-width: 600px;
+    transform: scale(1);
   }
   to {
     opacity: 0;
-    max-width: 0;
-    padding: 0;
-    border: none;
+    transform: scale(0.98) translateY(-2px);
+  }
+}
+
+@media (pointer: coarse) {
+  .sync-hint-dismiss {
+    width: 44px;
+    height: 44px;
   }
 }
 

@@ -5,6 +5,13 @@
   flex: 1 1 0%;
   min-width: 100px;
   max-width: none;
+  overflow: visible;
+}
+
+/* The autocomplete must escape compact navigation wrappers on small screens. */
+.nav-controls:has(> .nav-secondary-controls > .search-bar),
+.nav-controls .nav-secondary-controls:has(> .search-bar) {
+  overflow: visible;
 }
 
 .search-container {
@@ -66,6 +73,7 @@
 .search-input {
   flex: 1;
   min-width: 0;
+  height: 44px;
   border: none;
   outline: none;
   background: transparent;
@@ -85,8 +93,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
   background: var(--border-color);
   border: none;
@@ -157,6 +165,49 @@
   margin-bottom: 2px;
   background: transparent;
   border: none;
+  gap: 12px;
+}
+
+.suggestion-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-tab-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.suggestion-tab-hint kbd {
+  min-width: 30px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-primary);
+  box-shadow: 0 1px 0 var(--border-color);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: center;
+}
+
+.search-autocomplete-help {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .suggestion:hover,
@@ -171,18 +222,23 @@
 
 /* Touch device */
 @media (pointer: coarse) {
-  .suggestion {
-    min-height: 44px;
+  .search-icon,
+  .clear-button {
+    width: 44px;
+    height: 44px;
   }
 
-  .clear-button {
-    width: 22px;
-    height: 22px;
+  .suggestion {
+    min-height: 44px;
   }
 
   .clear-button svg {
     width: 11px;
     height: 11px;
+  }
+
+  .suggestion-tab-hint {
+    display: none;
   }
 }
 
@@ -194,6 +250,15 @@
   }
 }
 
+/* The two-row navigation uses full touch-sized search actions. */
+@media (max-width: 960px) {
+  .search-icon,
+  .clear-button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* Mobile - two row layout, more space available */
 @media (max-width: 768px) {
   .search-bar {
@@ -201,17 +266,14 @@
     flex: 1 1 0%;
     min-width: 0;
     max-width: none;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .search-container {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-  }
-
-  .search-container {
-    height: 40px;
+    height: 44px;
     padding: 0 10px;
   }
 
@@ -229,7 +291,7 @@
   }
 
   .suggestion {
-    min-height: 40px;
+    min-height: 44px;
   }
 }
 
@@ -240,20 +302,20 @@
     flex: 1 1 0%;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .search-container {
     flex: 1;
     min-width: 0;
-    height: 34px;
+    height: 44px;
     padding: 0 6px;
     gap: 2px;
   }
 
   .search-icon {
-    width: 22px;
-    height: 22px;
+    width: 44px;
+    height: 44px;
   }
 
   .search-icon svg {
@@ -262,16 +324,16 @@
   }
 
   .search-input {
-    font-size: 12px;
+    font-size: 16px;
   }
 
   .search-input::placeholder {
-    font-size: 11px;
+    font-size: 14px;
   }
 
   .clear-button {
-    width: 16px;
-    height: 16px;
+    width: 44px;
+    height: 44px;
   }
 
   .clear-button svg {
@@ -287,19 +349,19 @@
     flex: 1 1 0%;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .search-container {
     flex: 1;
     min-width: 0;
-    height: 32px;
+    height: 44px;
     padding: 0 5px;
   }
 
   .search-icon {
-    width: 20px;
-    height: 20px;
+    width: 44px;
+    height: 44px;
   }
 
   .search-icon svg {
@@ -308,11 +370,11 @@
   }
 
   .search-input {
-    font-size: 11px;
+    font-size: 16px;
   }
 
   .search-input::placeholder {
-    font-size: 10px;
+    font-size: 14px;
   }
 }
 
@@ -323,19 +385,19 @@
     flex: 1 1 0%;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .search-container {
     flex: 1;
     min-width: 0;
-    height: 30px;
+    height: 44px;
     padding: 0 4px;
   }
 
   .search-icon {
-    width: 18px;
-    height: 18px;
+    width: 44px;
+    height: 44px;
   }
 
   .search-icon svg {
@@ -344,19 +406,23 @@
   }
 
   .search-input {
-    font-size: 10px;
+    font-size: 16px;
   }
 
   .search-input::placeholder {
-    font-size: 9px;
+    font-size: 14px;
   }
 }
 
-/* Suppress outlines — container handles focus state */
-.search-input:focus-visible,
+/* The input uses the container focus ring; icon buttons keep their own ring. */
+.search-input:focus-visible {
+  outline: none;
+}
+
 .search-icon:focus-visible,
 .clear-button:focus-visible {
-  outline: none;
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
 }
 
 /* Reduced motion */

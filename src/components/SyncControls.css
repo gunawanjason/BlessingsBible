@@ -38,7 +38,7 @@
 
 .sync-toggle.active {
   background: var(--primary-color, #a0782c);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--primary-color, #a0782c);
 }
 
@@ -76,7 +76,7 @@
 
 .translation-tag.primary {
   background: var(--primary-color, #a0782c);
-  color: white;
+  color: var(--color-on-accent);
   border-color: var(--primary-color, #a0782c);
   cursor: default;
 }
@@ -155,6 +155,14 @@
   background: var(--bg-secondary);
 }
 
+.sync-toggle:focus-visible,
+.translation-tag:focus-visible,
+.add-translation:focus-visible,
+.menu-item:focus-visible {
+  outline: 2px solid var(--primary-color, #a0782c);
+  outline-offset: 2px;
+}
+
 /* Touch device: ensure buttons are 44px */
 @media (pointer: coarse) {
   .sync-toggle {
@@ -189,10 +197,10 @@
   }
 
   .sync-toggle {
-    padding: 4px 6px;
-    min-width: auto;
-    min-height: 28px;
-    height: 28px;
+    padding: 4px 10px;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
   }
 
   .controls-group {
@@ -201,25 +209,24 @@
 
   .translation-tag {
     font-size: 12px;
-    padding: 3px 8px;
-    min-height: 28px;
-    height: 28px;
+    padding: 3px 10px;
+    min-height: 44px;
+    height: 44px;
   }
 
   .add-translation {
     font-size: 12px;
-    padding: 3px 8px;
-    min-height: 28px;
-    height: 28px;
+    padding: 3px 10px;
+    min-height: 44px;
+    height: 44px;
   }
 }
 
-/* Override coarse-pointer 44px rule inside the compact sync row on mobile */
+/* Keep compact controls touch-safe inside the mobile tab bar. */
 @media (pointer: coarse) and (max-width: 768px) {
   .tab-bar-controls .sync-toggle,
   .tab-bar-controls .translation-tag,
   .tab-bar-controls .add-translation {
-    min-height: 28px;
-    min-width: auto;
+    min-height: 44px;
   }
 }

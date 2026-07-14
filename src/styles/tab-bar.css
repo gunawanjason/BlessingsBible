@@ -39,12 +39,10 @@
   visibility: hidden;
   max-width: 0;
   overflow: hidden;
+  transform: translateX(6px);
   transition:
-    opacity 0.2s ease,
-    visibility 0.2s ease,
-    max-width 0.3s ease,
-    padding-left 0.3s ease,
-    margin-left 0.3s ease;
+    opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
   height: 100%;
   order: 3; /* sit after sync controls (order:2) on desktop */
 }
@@ -53,6 +51,7 @@
   opacity: 1;
   visibility: visible;
   max-width: 200px;
+  transform: translateX(0);
   /* Separator between the translation chips and the copy button */
   margin-left: var(--spacing-xs);
   padding-left: var(--spacing-sm);
@@ -158,7 +157,7 @@
 @media (max-width: 768px) {
   .view-tab-bar-inner {
     padding: 0 var(--spacing-sm);
-    min-height: 40px;
+    min-height: 44px;
     flex-wrap: wrap;
     align-items: stretch;
   }
@@ -167,7 +166,7 @@
   .tab-bar-tabs {
     order: 1;
     flex: 1 0 0;
-    min-height: 40px;
+    min-height: 44px;
     align-items: center;
   }
 
@@ -201,14 +200,14 @@
   .view-tab {
     padding: 0 12px;
     font-size: 13px;
-    height: 40px;
-    min-height: 40px;
+    height: 44px;
+    min-height: 44px;
   }
 
   .tab-bar-actions .copy-button,
   .tab-bar-actions .share-button {
-    height: 28px;
-    min-height: 28px;
+    height: 44px;
+    min-height: 44px;
     padding: 0 8px;
     font-size: 11px;
   }
@@ -223,14 +222,14 @@
 @media (max-width: 480px) {
   .view-tab-bar-inner {
     padding: 0 8px;
-    min-height: 36px;
+    min-height: 44px;
   }
 
   .view-tab {
     padding: 0 10px;
-    font-size: 12px;
-    height: 36px;
-    min-height: 36px;
+    font-size: 13px;
+    height: 44px;
+    min-height: 44px;
   }
 
   .tab-bar-controls {
@@ -239,10 +238,10 @@
 
   .tab-bar-actions .copy-button,
   .tab-bar-actions .share-button {
-    height: 28px;
-    min-height: 28px;
+    height: 44px;
+    min-height: 44px;
     padding: 0 7px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .tab-bar-actions .copy-button svg,
@@ -254,20 +253,20 @@
 
 @media (max-width: 375px) {
   .view-tab-bar-inner {
-    min-height: 34px;
+    min-height: 44px;
   }
 
   .view-tab {
-    height: 34px;
-    min-height: 34px;
+    height: 44px;
+    min-height: 44px;
     padding: 0 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .tab-bar-actions .copy-button,
   .tab-bar-actions .share-button {
-    height: 26px;
-    min-height: 26px;
+    height: 44px;
+    min-height: 44px;
     padding: 0 6px;
   }
 
