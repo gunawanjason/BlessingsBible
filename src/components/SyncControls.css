@@ -133,8 +133,15 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-medium);
   z-index: 1000;
-  margin-top: var(--spacing-xs);
+  margin: 0;
   min-width: 100px;
+  width: max-content;
+  max-width: calc(100vw - 16px);
+  max-height: min(60dvh, calc(100dvh - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
 }
 
 .menu-item {
@@ -219,6 +226,13 @@
     padding: 3px 10px;
     min-height: 44px;
     height: 44px;
+  }
+
+  /* The portal is collision-positioned in JS, this keeps long lists usable. */
+  .translation-menu {
+    min-width: 160px;
+    max-width: calc(100vw - 16px);
+    max-height: min(60dvh, calc(100dvh - 16px));
   }
 }
 

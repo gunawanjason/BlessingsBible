@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import "./ComparisonView.css";
 import { fetchMultipleVerses, fetchHeadings } from "../services/bibleApi";
+import { getTranslationLanguage } from "../utils/translationMappings";
 
 // Helper function to split verse content by verse numbers and render individual verses
 const splitVerseContent = (verseText) => {
@@ -69,6 +70,7 @@ const ComparisonView = ({
   const [headings, setHeadings] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activeVerseNumber, setActiveVerseNumber] = useState(null);
   const containerRef = useRef(null);
   const verseRefs = useRef({});
 
@@ -134,11 +136,35 @@ const ComparisonView = ({
     }
   }, [verses, id, onVersePositionUpdate]);
 
+  useEffect(() => {
+    setActiveVerseNumber(null);
+  }, [book, chapter]);
+
+  useEffect(() => {
+    const verseNumbers = verses.map((verse) => verse.verse);
+    if (verseNumbers.length === 0) {
+      setActiveVerseNumber(null);
+      return;
+    }
+
+    const highlightedNumber = Number(highlightedVerse?.verse);
+    setActiveVerseNumber((current) => {
+      if (
+        Number.isInteger(highlightedNumber) &&
+        verseNumbers.includes(highlightedNumber)
+      ) {
+        return highlightedNumber;
+      }
+      return verseNumbers.includes(current) ? current : verseNumbers[0];
+    });
+  }, [highlightedVerse, verses]);
+
   // Scroll handling removed since individual containers don't scroll anymore
 
   // Handle verse click for selection
   const handleVerseClick = useCallback(
     (verseNumber) => {
+      setActiveVerseNumber(verseNumber);
       if (onVerseSelect) {
         onVerseSelect(verseNumber);
       }
@@ -146,14 +172,44 @@ const ComparisonView = ({
     [onVerseSelect],
   );
 
+  const focusVerseAtIndex = useCallback(
+    (index) => {
+      const targetVerse = verses[index];
+      if (!targetVerse) return;
+
+      setActiveVerseNumber(targetVerse.verse);
+      requestAnimationFrame(() =>
+        verseRefs.current[targetVerse.verse]?.focus(),
+      );
+    },
+    [verses],
+  );
+
   const handleVerseKeyDown = useCallback(
-    (event, verseNumber) => {
+    (event, verseNumber, index) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         handleVerseClick(verseNumber);
+        return;
       }
+
+      let nextIndex;
+      if (event.key === "ArrowDown") {
+        nextIndex = Math.min(index + 1, verses.length - 1);
+      } else if (event.key === "ArrowUp") {
+        nextIndex = Math.max(index - 1, 0);
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = verses.length - 1;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      focusVerseAtIndex(nextIndex);
     },
-    [handleVerseClick],
+    [focusVerseAtIndex, handleVerseClick, verses.length],
   );
 
   // Auto-scroll to highlighted verse
@@ -176,7 +232,7 @@ const ComparisonView = ({
       id={id}
     >
       <div className="view-header">
-        <h4>{translation}</h4>
+        <h2>{translation}</h2>
       </div>
 
       {loading && (
@@ -193,8 +249,8 @@ const ComparisonView = ({
       )}
 
       {verses.length > 0 && (
-        <div className="verses-list">
-          {verses.map((verse) => (
+        <div className="verses-list" lang={getTranslationLanguage(translation)}>
+          {verses.map((verse, index) => (
             <div
               key={`${id}-${verse.verse}-row`}
               id={`${id}-row-${verse.verse}`}
@@ -208,26 +264,35 @@ const ComparisonView = ({
                 {(headings || [])
                   .filter((h) => parseInt(h.start) === parseInt(verse.verse))
                   .map((h, i) => (
-                    <div
+                    <h3
                       key={`heading-${verse.verse}-${i}`}
                       className="pericope-heading"
                     >
                       {h.heading}
-                    </div>
+                    </h3>
                   ))}
               </div>
               <div
                 id={`${id}-verse-${verse.verse}`}
-                ref={(el) => (verseRefs.current[verse.verse] = el)}
+                ref={(element) => {
+                  if (element) {
+                    verseRefs.current[verse.verse] = element;
+                  } else {
+                    delete verseRefs.current[verse.verse];
+                  }
+                }}
                 className={`verse-item ${
                   highlightedVerse?.verse === verse.verse ? "highlighted" : ""
                 } ${verse.isEmpty ? "empty-verse" : ""} ${
                   selectedVerses.has(verse.verse) ? "selected" : ""
                 } selectable`}
                 onClick={() => handleVerseClick(verse.verse)}
-                onKeyDown={(event) => handleVerseKeyDown(event, verse.verse)}
+                onKeyDown={(event) =>
+                  handleVerseKeyDown(event, verse.verse, index)
+                }
+                onFocus={() => setActiveVerseNumber(verse.verse)}
                 role="button"
-                tabIndex={0}
+                tabIndex={activeVerseNumber === verse.verse ? 0 : -1}
                 aria-pressed={selectedVerses.has(verse.verse)}
               >
                 <span className="verse-number">{verse.verse}</span>

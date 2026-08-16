@@ -10,6 +10,7 @@ import {
   fetchHeadingsCached,
   hasCachedChapter,
 } from "../services/bibleApi";
+import { getTranslationLanguage } from "../utils/translationMappings";
 import ScrollToTop from "./ScrollToTop";
 import "./ChapterReader.css";
 
@@ -30,7 +31,9 @@ const ChapterReader = ({
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [error, setError] = useState(null);
+  const [activeVerseNumber, setActiveVerseNumber] = useState(null);
   const versesContainerRef = useRef(null);
+  const verseRefs = useRef({});
   const abortControllerRef = useRef(null);
   const fetchIdRef = useRef(0);
   const skeletonDelayRef = useRef(null);
@@ -193,6 +196,31 @@ const ChapterReader = ({
     }
   }, [chapterVerses, chapterVersesRef]);
 
+  useEffect(() => {
+    setActiveVerseNumber(null);
+  }, [selectedBook, selectedChapter]);
+
+  useEffect(() => {
+    const verseNumbers = chapterVerses.map(
+      (verse, index) => verse.verse || index + 1,
+    );
+    if (verseNumbers.length === 0) {
+      setActiveVerseNumber(null);
+      return;
+    }
+
+    const highlightedNumber = Number(highlightedVerse?.verse);
+    setActiveVerseNumber((current) => {
+      if (
+        Number.isInteger(highlightedNumber) &&
+        verseNumbers.includes(highlightedNumber)
+      ) {
+        return highlightedNumber;
+      }
+      return verseNumbers.includes(current) ? current : verseNumbers[0];
+    });
+  }, [chapterVerses, highlightedVerse]);
+
   // Optimized auto-scroll with intersection observer
   useEffect(() => {
     if (!highlightedVerse || chapterVerses.length === 0) return;
@@ -222,6 +250,7 @@ const ChapterReader = ({
   // Handle verse selection
   const handleVerseClick = useCallback(
     (verseNumber) => {
+      setActiveVerseNumber(verseNumber);
       setSelectedVerses((prev) => {
         const newSelected = new Set(prev);
         if (newSelected.has(verseNumber)) {
@@ -233,6 +262,45 @@ const ChapterReader = ({
       });
     },
     [setSelectedVerses],
+  );
+
+  const focusVerseAtIndex = useCallback(
+    (index) => {
+      const targetVerse = chapterVerses[index];
+      if (!targetVerse) return;
+
+      const verseNumber = targetVerse.verse || index + 1;
+      setActiveVerseNumber(verseNumber);
+      requestAnimationFrame(() => verseRefs.current[verseNumber]?.focus());
+    },
+    [chapterVerses],
+  );
+
+  const handleVerseKeyDown = useCallback(
+    (event, verseNumber, index) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        handleVerseClick(verseNumber);
+        return;
+      }
+
+      let nextIndex;
+      if (event.key === "ArrowDown") {
+        nextIndex = Math.min(index + 1, chapterVerses.length - 1);
+      } else if (event.key === "ArrowUp") {
+        nextIndex = Math.max(index - 1, 0);
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = chapterVerses.length - 1;
+      } else {
+        return;
+      }
+
+      event.preventDefault();
+      focusVerseAtIndex(nextIndex);
+    },
+    [chapterVerses.length, focusVerseAtIndex, handleVerseClick],
   );
 
   // Memoized verse components for better performance
@@ -254,29 +322,31 @@ const ChapterReader = ({
           key={`${selectedBook}-${selectedChapter}-${verseNumber}-wrapper`}
         >
           {currentHeadings.map((h, i) => (
-            <div
+            <h2
               key={`heading-${verseNumber}-${i}`}
               className="pericope-heading"
             >
               {h.heading}
-            </div>
+            </h2>
           ))}
           <div
+            ref={(element) => {
+              if (element) {
+                verseRefs.current[verseNumber] = element;
+              } else {
+                delete verseRefs.current[verseNumber];
+              }
+            }}
             className={`verse-item ${isHighlighted ? "highlighted" : ""} ${
               isSelected ? "selected" : ""
             }`}
             id={`verse-${verseNumber}`}
             onClick={() => handleVerseClick(verseNumber)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                handleVerseClick(verseNumber);
-              }
-            }}
+            onKeyDown={(event) => handleVerseKeyDown(event, verseNumber, index)}
+            onFocus={() => setActiveVerseNumber(verseNumber)}
             role="button"
-            tabIndex={0}
+            tabIndex={activeVerseNumber === verseNumber ? 0 : -1}
             aria-pressed={isSelected}
-            aria-label={`Verse ${verseNumber}${isSelected ? ", selected" : ""}. Click to ${isSelected ? "deselect" : "select"}.`}
           >
             <span className="verse-number">{verseNumber}</span>
             <span className="verse-text">{verse.text}</span>
@@ -291,7 +361,9 @@ const ChapterReader = ({
     selectedBook,
     selectedChapter,
     handleVerseClick,
+    handleVerseKeyDown,
     headings,
+    activeVerseNumber,
   ]);
 
   if (!selectedBook || !selectedChapter) {
@@ -363,7 +435,11 @@ const ChapterReader = ({
         )}
 
         {!showSkeleton && !error && chapterVerses.length > 0 && (
-          <div className="verses-container" ref={versesContainerRef}>
+          <div
+            className="verses-container"
+            ref={versesContainerRef}
+            lang={getTranslationLanguage(selectedTranslation)}
+          >
             {verseComponents}
           </div>
         )}

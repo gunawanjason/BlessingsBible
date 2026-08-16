@@ -1,5 +1,5 @@
 /* Comparison View */
-.verse-item {
+:where(.comparison-view-container) .verse-item {
   display: flex;
   align-items: flex-start;
   margin-bottom: var(--spacing-xs);
@@ -13,7 +13,7 @@
   outline: none;
 }
 
-.verse-number {
+:where(.comparison-view-container) .verse-number {
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -41,7 +41,7 @@
   border-right: none;
 }
 
-.view-header {
+.comparison-view-container .view-header {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -53,7 +53,7 @@
   z-index: 50;
 }
 
-.view-header h4 {
+.comparison-view-container .view-header h2 {
   display: inline-flex;
   align-items: center;
   margin: 0;
@@ -69,15 +69,15 @@
   white-space: nowrap;
 }
 
-.error-message {
+:where(.comparison-view-container) .error-message {
   padding: var(--spacing-md);
-  color: var(--error-color, #a63d2f);
+  color: var(--color-danger-text);
   font-size: 14px;
   text-align: center;
 }
 
 /* Pericope Headings */
-.pericope-heading {
+:where(.comparison-view-container) .pericope-heading {
   font-family: var(--font-display, "Lora", Georgia, serif);
   font-size: 1em;
   font-weight: 600;
@@ -88,18 +88,18 @@
   width: 100%;
 }
 
-.verses-list {
+:where(.comparison-view-container) .verses-list {
   padding: var(--spacing-md);
   flex: 1;
 }
 
-.verse-row {
+:where(.comparison-view-container) .verse-row {
   display: flow-root;
 }
 
 /* Always-present heading area. flow-root contains the heading's own margins
    so minHeight measurements are accurate even when the area is empty. */
-.verse-heading-area {
+:where(.comparison-view-container) .verse-heading-area {
   display: flow-root;
 }
 
@@ -107,76 +107,76 @@
   padding-right: var(--spacing-lg);
 }
 
-.verse-item.selectable {
+:where(.comparison-view-container) .verse-item.selectable {
   cursor: pointer;
 }
 
-.verse-item.selectable:hover,
-.verse-item:hover {
+:where(.comparison-view-container) .verse-item.selectable:hover,
+:where(.comparison-view-container) .verse-item:hover {
   background-color: var(--bg-secondary);
 }
 
-.verse-item:focus-visible {
+:where(.comparison-view-container) .verse-item:focus-visible {
   outline: 2px solid var(--primary-color, #a0782c);
   outline-offset: 2px;
 }
 
-.verse-item.selected {
+:where(.comparison-view-container) .verse-item.selected {
   background-color: var(--primary-light, rgba(160, 120, 44, 0.12));
 }
 
-.verse-item.highlighted {
+:where(.comparison-view-container) .verse-item.highlighted {
   background-color: rgba(184, 92, 56, 0.08);
 }
 
-.verse-text {
+:where(.comparison-view-container) .verse-text {
   display: flex;
   align-items: flex-start;
   flex: 1;
   word-wrap: break-word;
 }
 
-.verse-item.empty-verse {
+:where(.comparison-view-container) .verse-item.empty-verse {
   opacity: 0.4;
   min-height: 3em;
 }
 
-.missing-verse {
+:where(.comparison-view-container) .missing-verse {
   color: var(--text-secondary);
   font-style: italic;
   font-size: 16px;
 }
 
-.verse-segment {
+:where(.comparison-view-container) .verse-segment {
   display: block;
   margin-bottom: 0.25rem;
 }
 
-.verse-segment:last-child {
+:where(.comparison-view-container) .verse-segment:last-child {
   margin-bottom: 0;
 }
 
-.inline-verse-number {
+:where(.comparison-view-container) .inline-verse-number {
   font-weight: bold;
   color: var(--accent-color, #b85c38);
   margin-right: 0.25rem;
   font-size: 0.9em;
 }
 
-.verse-segment-text {
+:where(.comparison-view-container) .verse-segment-text {
   display: inline;
 }
 
 /* Touch device: ensure comparison verse items have enough tap area */
 @media (pointer: coarse) {
-  .verse-item {
+  :where(.comparison-view-container) .verse-item {
     min-height: 44px;
     padding: var(--spacing-sm) var(--spacing-md);
   }
 }
 
 /* Loading */
-.loading-container {
+:where(.comparison-view-container) .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -185,7 +185,7 @@
   gap: var(--spacing-md, 16px);
 }
 
-.loading-spinner {
+:where(.comparison-view-container) .loading-spinner {
   width: 24px;
   height: 24px;
   border: 2px solid var(--border-color, #ddd5c8);
@@ -194,7 +194,7 @@
   animation: spin 0.8s linear infinite;
 }
 
-.loading-text {
+:where(.comparison-view-container) .loading-text {
   font-size: 14px;
   font-weight: 400;
   color: var(--text-secondary, #7a6e5d);
@@ -250,7 +250,7 @@
     border-right: none;
   }
 
-  .view-header {
+  .comparison-view-container .view-header {
     border-radius: var(--radius) var(--radius) 0 0;
     background: var(--bg-tertiary);
     /* position:sticky is irrelevant here — the card clips overflow so the
@@ -258,7 +258,7 @@
     position: relative;
   }
 
-  .verses-list {
+  :where(.comparison-view-container) .verses-list {
     padding: var(--spacing-md);
     /* flex:1 + min-height:0 lets this shrink below content size so it scrolls */
     flex: 1;
@@ -272,36 +272,25 @@
   }
 }
 
-/* Mobile landscape: side-by-side instead of scroll */
-@media (max-width: 768px) and (orientation: landscape) {
+/* Let the page grow naturally when a landscape viewport is shorter than the
+   navigation and comparison toolbar combined. */
+@media (max-width: 768px) and (orientation: landscape) and (max-height: 480px) {
   .comparison-scroll-container {
-    scroll-snap-type: none;
-    overflow-x: visible;
-    /* Height flows from .verse-comparison-panel via flex:1 */
+    height: auto;
+    min-height: 280px;
+    overflow-y: visible;
   }
 
   .comparison-view-container {
-    min-width: 0;
-    max-width: none;
-    flex: 1;
-    height: 100%;
-    overflow: hidden;
-    scroll-snap-align: none;
-    margin: 0;
-    border-radius: 0;
-    border: none;
-    border-right: 1px solid var(--divider-color);
-    background: var(--bg-tertiary);
+    height: auto;
+    min-height: 280px;
+    overflow: visible;
   }
 
-  .comparison-view-container:last-child {
-    border-right: none;
-  }
-
-  .view-header {
-    border-radius: 0;
-    background: var(--bg-tertiary);
-    position: relative;
+  :where(.comparison-view-container) .verses-list {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow-y: visible;
   }
 }
 
@@ -329,7 +318,7 @@
     border-right: none;
   }
 
-  .view-header {
+  .comparison-view-container .view-header {
     display: none;
   }
 }

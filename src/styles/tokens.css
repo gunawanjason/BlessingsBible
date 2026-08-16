@@ -26,8 +26,10 @@
   --color-pericope: #2c2520;
   --color-spinner: #4a624a;
   --color-danger: #ef4444;
+  --color-danger-text: #b42318;
   --color-danger-bg: #fef2f2;
   --color-on-accent: #f8f6f2;
+  --color-on-accent-muted: #e7ede7;
   --color-on-danger: #0f0f0f;
   --color-success: #087a57;
   --color-hero-bg: linear-gradient(
@@ -106,8 +108,10 @@
   --color-pericope: #f0ece6;
   --color-spinner: #7d947d;
   --color-danger: #f87171;
+  --color-danger-text: #ff8a80;
   --color-danger-bg: rgba(248, 113, 113, 0.1);
   --color-on-accent: #0f0f0f;
+  --color-on-accent-muted: #2c2520;
   --color-on-danger: #0f0f0f;
   --color-success: #34d399;
   --color-hero-bg: linear-gradient(

@@ -116,8 +116,8 @@ Toggle between them via the tab bar directly beneath the main navigation.
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) **v18+** (v20 LTS recommended)
-- [pnpm](https://pnpm.io/) **v8+** — npm and yarn also work, but the lockfile targets pnpm
+- [Node.js](https://nodejs.org/) **v18.18+ on Node 18, v20.9+ on Node 20, or v22+**
+- [pnpm](https://pnpm.io/) **v11.9.0**
 
 ### Install
 
@@ -158,6 +158,14 @@ pnpm prettier          # write formatting changes
 pnpm prettier:check    # verify formatting (useful in CI)
 ```
 
+### Check
+
+```bash
+pnpm check
+```
+
+Runs the test, lint, formatting, and production build checks in sequence.
+
 ---
 
 ## Scripts
@@ -166,8 +174,10 @@ pnpm prettier:check    # verify formatting (useful in CI)
 | --------------------- | ------------------------------------------------- |
 | `pnpm dev`            | Start the Vite dev server with HMR                |
 | `pnpm build`          | Produce an optimized production bundle in `dist/` |
+| `pnpm check`          | Run all test, lint, format, and build checks      |
 | `pnpm preview`        | Serve the production build locally                |
 | `pnpm lint`           | Run ESLint across the project                     |
+| `pnpm test`           | Run the Node.js test suite                        |
 | `pnpm prettier`       | Format the codebase with Prettier                 |
 | `pnpm prettier:check` | Check formatting without writing changes          |
 
@@ -207,10 +217,11 @@ BlessingsBible/
 │   │   ├── print.css
 │   │   ├── status-bar.css
 │   │   ├── tab-bar.css
-│   │   ├── welcome-banner.css
 │   │   └── index.css               # Barrel import
 │   ├── utils/
+│   │   ├── clipboard.js            # Clipboard API + legacy fallback
 │   │   ├── ga.js                   # Google Analytics helpers
+│   │   ├── searchAutocomplete.js   # Localized reference suggestions
 │   │   ├── translationMappings.js  # Translation ↔ language ↔ book names
 │   │   └── urlUtils.js             # Shareable URL encode / decode
 │   ├── App.jsx                     # Root component & global state

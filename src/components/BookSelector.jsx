@@ -20,9 +20,13 @@ const BookSelector = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showOldTestament, setShowOldTestament] = useState(true);
   const [showNewTestament, setShowNewTestament] = useState(true);
+  const [isMobileBookSheet, setIsMobileBookSheet] = useState(false);
   const bookDropdownRef = useRef(null);
   const chapterDropdownRef = useRef(null);
   const bookTriggerRef = useRef(null);
+  const bookMenuRef = useRef(null);
+  const chapterTriggerRef = useRef(null);
+  const chapterMenuRef = useRef(null);
   const bookMenuHeadingRef = useRef(null);
   const searchInputRef = useRef(null);
   const selectedBookRef = useRef(null);
@@ -31,6 +35,40 @@ const BookSelector = ({
   const chapterMenuId = `${idPrefix}-chapter-menu`;
   const bookSearchId = `${idPrefix}-book-search`;
 
+  // Keep modal semantics and scroll locking aligned with the mobile sheet CSS.
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(max-width: 768px)");
+    if (!mediaQuery) return undefined;
+
+    const updateViewport = () => setIsMobileBookSheet(mediaQuery.matches);
+    updateViewport();
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", updateViewport);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(updateViewport);
+    }
+
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener("change", updateViewport);
+      } else if (mediaQuery.removeListener) {
+        mediaQuery.removeListener(updateViewport);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((!showBooks && !showChapters) || !isMobileBookSheet) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showBooks, showChapters, isMobileBookSheet]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -38,14 +76,38 @@ const BookSelector = ({
         bookDropdownRef.current &&
         !bookDropdownRef.current.contains(event.target)
       ) {
+        const focusWasInMenu = bookMenuRef.current?.contains(
+          document.activeElement,
+        );
         setShowBooks(false);
         setSearchQuery("");
+        if (focusWasInMenu) {
+          window.requestAnimationFrame(() => {
+            const activeElement = document.activeElement;
+            if (
+              activeElement === document.body ||
+              bookMenuRef.current?.contains(activeElement)
+            ) {
+              bookTriggerRef.current?.focus();
+            }
+          });
+        }
       }
       if (
         chapterDropdownRef.current &&
         !chapterDropdownRef.current.contains(event.target)
       ) {
+        const focusWasInMenu = chapterMenuRef.current?.contains(
+          document.activeElement,
+        );
         setShowChapters(false);
+        if (focusWasInMenu) {
+          window.requestAnimationFrame(() => {
+            if (document.activeElement === document.body) {
+              chapterTriggerRef.current?.focus();
+            }
+          });
+        }
       }
     };
 
@@ -79,6 +141,21 @@ const BookSelector = ({
     return () => window.clearTimeout(focusTimer);
   }, [showBooks]);
 
+  useEffect(() => {
+    if (!showChapters) return undefined;
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const initialTarget =
+        chapterMenuRef.current?.querySelector(".chapter-item.active") ||
+        chapterMenuRef.current?.querySelector(".chapter-item") ||
+        chapterMenuRef.current?.querySelector("button");
+      initialTarget?.focus({ preventScroll: true });
+      initialTarget?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    });
+
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, [showChapters, selectedChapter]);
+
   if (!bibleStructure) return null;
 
   const currentBook = bibleStructure.books.find(
@@ -97,15 +174,88 @@ const BookSelector = ({
     }
   };
 
+  const handleBookDialogKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeBookMenu(true);
+      return;
+    }
+
+    if (event.key !== "Tab" || !isMobileBookSheet || !bookMenuRef.current) {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      bookMenuRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    if (focusableElements.length === 0) return;
+
+    const currentIndex = focusableElements.indexOf(document.activeElement);
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && currentIndex <= 0) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (
+      !event.shiftKey &&
+      (currentIndex === -1 || currentIndex === focusableElements.length - 1)
+    ) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  };
+
   const handleBookSelect = (book) => {
     onBookChange(book.name);
     onChapterChange(1); // Start at chapter 1 when selecting a new book
     closeBookMenu(true);
   };
 
+  const closeChapterMenu = (restoreFocus = false) => {
+    setShowChapters(false);
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => chapterTriggerRef.current?.focus());
+    }
+  };
+
   const handleChapterSelect = (chapterNumber) => {
     onChapterChange(chapterNumber);
-    setShowChapters(false);
+    closeChapterMenu(true);
+  };
+
+  const handleChapterDialogKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeChapterMenu(true);
+      return;
+    }
+
+    if (event.key !== "Tab" || !isMobileBookSheet || !chapterMenuRef.current) {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      chapterMenuRef.current.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
   };
 
   const handlePreviousChapter = () => {
@@ -188,16 +338,21 @@ const BookSelector = ({
 
             {showBooks && (
               <div
+                className="book-menu-backdrop"
+                aria-hidden="true"
+                onClick={() => closeBookMenu(true)}
+              />
+            )}
+
+            {showBooks && (
+              <div
+                ref={bookMenuRef}
                 className="dropdown-menu book-menu"
                 id={bookMenuId}
                 role="dialog"
+                aria-modal={isMobileBookSheet ? "true" : undefined}
                 aria-label="Choose a Bible book"
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.stopPropagation();
-                    closeBookMenu(true);
-                  }
-                }}
+                onKeyDown={handleBookDialogKeyDown}
               >
                 <div className="menu-header">
                   <h3 ref={bookMenuHeadingRef} tabIndex={-1}>
@@ -416,6 +571,7 @@ const BookSelector = ({
                   ‹
                 </button>
                 <button
+                  ref={chapterTriggerRef}
                   type="button"
                   className={`chapter-display-button chapter-selector-btn ${
                     showChapters ? "active" : ""
@@ -469,10 +625,21 @@ const BookSelector = ({
 
               {showChapters && (
                 <div
+                  className="book-menu-backdrop"
+                  aria-hidden="true"
+                  onClick={() => closeChapterMenu(true)}
+                />
+              )}
+
+              {showChapters && (
+                <div
+                  ref={chapterMenuRef}
                   className="dropdown-menu chapters-menu"
                   id={chapterMenuId}
                   role="dialog"
+                  aria-modal={isMobileBookSheet ? "true" : undefined}
                   aria-label="Choose a chapter"
+                  onKeyDown={handleChapterDialogKeyDown}
                 >
                   <div className="menu-header">
                     <h3>
@@ -480,7 +647,7 @@ const BookSelector = ({
                     </h3>
                     <button
                       className="close-button"
-                      onClick={() => setShowChapters(false)}
+                      onClick={() => closeChapterMenu(true)}
                       aria-label="Close menu"
                     >
                       <svg
@@ -534,6 +701,7 @@ const BookSelector = ({
       <div className="selector-controls">
         <div className="book-dropdown" ref={bookDropdownRef}>
           <button
+            ref={bookTriggerRef}
             type="button"
             className="selector-button"
             onClick={() => setShowBooks(!showBooks)}
@@ -551,10 +719,21 @@ const BookSelector = ({
 
           {showBooks && (
             <div
+              className="book-menu-backdrop"
+              aria-hidden="true"
+              onClick={() => closeBookMenu(true)}
+            />
+          )}
+
+          {showBooks && (
+            <div
+              ref={bookMenuRef}
               className="dropdown-menu"
               id={bookMenuId}
               role="dialog"
+              aria-modal={isMobileBookSheet ? "true" : undefined}
               aria-label="Choose a Bible book"
+              onKeyDown={handleBookDialogKeyDown}
             >
               <div className="testament-section">
                 <div className="section-header">
@@ -610,6 +789,7 @@ const BookSelector = ({
                 ‹
               </button>
               <button
+                ref={chapterTriggerRef}
                 type="button"
                 className="selector-button chapter-selector-btn"
                 onClick={() => setShowChapters(!showChapters)}
@@ -633,10 +813,21 @@ const BookSelector = ({
 
             {showChapters && (
               <div
+                className="book-menu-backdrop"
+                aria-hidden="true"
+                onClick={() => closeChapterMenu(true)}
+              />
+            )}
+
+            {showChapters && (
+              <div
+                ref={chapterMenuRef}
                 className="dropdown-menu chapters-menu"
                 id={chapterMenuId}
                 role="dialog"
+                aria-modal={isMobileBookSheet ? "true" : undefined}
                 aria-label="Choose a chapter"
+                onKeyDown={handleChapterDialogKeyDown}
               >
                 <div className="chapters-grid">
                   {Array.from({ length: totalChapters }, (_, i) => i + 1).map(

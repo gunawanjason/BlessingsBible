@@ -98,6 +98,13 @@
   opacity: 0.6;
 }
 
+.tab-bar-actions .copy-button.error,
+.tab-bar-actions .share-button.error {
+  color: var(--color-danger-text);
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger-text);
+}
+
 /* Count: plain number beside icon — no box-inside-a-chip */
 .tab-bar-actions .copy-count,
 .tab-bar-actions .share-count {
@@ -191,10 +198,29 @@
     scrollbar-width: none;
     gap: 6px;
     position: relative;
+    scroll-padding-inline: var(--spacing-sm);
+    overscroll-behavior-x: contain;
   }
 
   .tab-bar-controls::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Keep a visible edge cue only while more controls remain off-screen. */
+  .tab-bar-controls.has-overflow-right::after {
+    content: ">";
+    position: absolute;
+    top: 4px;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 5px 0 16px;
+    background: linear-gradient(90deg, transparent, var(--bg-primary) 65%);
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: none;
   }
 
   .view-tab {

@@ -8,6 +8,7 @@ import {
   hasCachedChapter,
 } from "../services/bibleApi";
 import { BOOK_TRANSLATIONS, BOOK_NAMES } from "../utils/translationMappings";
+import { writeTextToClipboard } from "../utils/clipboard";
 
 const VerseComparisonPanel = ({
   selectedBook,
@@ -27,6 +28,7 @@ const VerseComparisonPanel = ({
   const [headingsData, setHeadingsData] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [translationErrors, setTranslationErrors] = useState({});
   const [showSyncHint, setShowSyncHint] = useState(() => {
     try {
       return !localStorage.getItem("syncHintDismissed");
@@ -40,6 +42,7 @@ const VerseComparisonPanel = ({
   const viewsRef = useRef(null);
   const abortControllerRef = useRef(null);
   const fetchIdRef = useRef(0);
+  const retryFocusTranslationRef = useRef(null);
   // Stores the last known verse count so the skeleton can match the column height
   // even after alignedVerses has been cleared for a new chapter load. Default of 30
   // roughly covers most chapters and fills the viewport on first load.
@@ -78,6 +81,7 @@ const VerseComparisonPanel = ({
     const fetchId = ++fetchIdRef.current;
 
     setError(null);
+    setTranslationErrors({});
     setIsLoading(
       !translations.every((translation) =>
         hasCachedChapter(translation, selectedBook, selectedChapter),
@@ -89,42 +93,60 @@ const VerseComparisonPanel = ({
       const allHeadingsData = {};
       const headingsPromises = {};
 
-      // Fetch verse text first; optional headings continue in parallel.
-      await Promise.all(
+      // Preserve successful columns even when one translation is unavailable.
+      const results = await Promise.allSettled(
         translations.map(async (translation) => {
-          try {
-            headingsPromises[translation] = fetchHeadingsCached(
-              translation,
-              selectedBook,
-              selectedChapter,
-              { signal: controller.signal },
-            ).catch(() => ({ data: [], fromCache: false }));
-            const versesResponse = await fetchChapterCached(
-              translation,
-              selectedBook,
-              selectedChapter,
-              {
-                signal: controller.signal,
-              },
-            );
+          const headingsPromise = fetchHeadingsCached(
+            translation,
+            selectedBook,
+            selectedChapter,
+            { signal: controller.signal },
+          ).catch(() => ({ data: [], fromCache: false }));
+          const versesResponse = await fetchChapterCached(
+            translation,
+            selectedBook,
+            selectedChapter,
+            { signal: controller.signal },
+          );
 
-            allVersesData[translation] = versesResponse.data.reduce(
-              (acc, verse) => {
-                acc[verse.verse] = verse.text;
-                return acc;
-              },
-              {},
-            );
-          } catch (err) {
-            if (err.name === "AbortError") throw err;
-            throw new Error(
-              `Unable to load ${translation}: ${err.message || "request failed"}`,
-            );
-          }
+          return {
+            translation,
+            verses: versesResponse.data,
+            headingsPromise,
+          };
         }),
       );
 
       if (controller.signal.aborted || fetchIdRef.current !== fetchId) return;
+
+      const failures = {};
+      results.forEach((result, index) => {
+        const translation = translations[index];
+        if (result.status === "rejected") {
+          if (result.reason?.name === "AbortError") throw result.reason;
+          failures[translation] =
+            result.reason?.message || "The translation could not be loaded.";
+          return;
+        }
+
+        allVersesData[translation] = result.value.verses.reduce(
+          (acc, verse) => {
+            acc[verse.verse] = verse.text;
+            return acc;
+          },
+          {},
+        );
+        headingsPromises[translation] = result.value.headingsPromise;
+      });
+
+      const successfulTranslations = Object.keys(allVersesData);
+      setTranslationErrors(failures);
+      if (successfulTranslations.length === 0) {
+        setAlignedVerses([]);
+        setHeadingsData({});
+        setIsLoading(false);
+        return;
+      }
 
       // Get all unique verse numbers across all translations
       const allVerseNumbers = new Set();
@@ -143,8 +165,9 @@ const VerseComparisonPanel = ({
       const aligned = sortedVerseNumbers.map((verseNumber) => {
         const verseData = { verse: verseNumber };
         translations.forEach((translation) => {
-          verseData[translation] =
-            allVersesData[translation][verseNumber] || null;
+          verseData[translation] = allVersesData[translation]
+            ? allVersesData[translation][verseNumber] || null
+            : null;
         });
         return verseData;
       });
@@ -153,7 +176,7 @@ const VerseComparisonPanel = ({
       setIsLoading(false);
 
       await Promise.all(
-        translations.map(async (translation) => {
+        successfulTranslations.map(async (translation) => {
           const headingsResponse = await headingsPromises[translation];
           allHeadingsData[translation] = headingsResponse.data;
         }),
@@ -457,11 +480,29 @@ const VerseComparisonPanel = ({
 
   // Copy selected verses from comparison view
   const copySelectedVerses = useCallback(async () => {
+    const availableTranslations = translations.filter(
+      (translation) =>
+        !translationErrors[translation] &&
+        alignedVerses.some((verseData) => verseData[translation] != null),
+    );
     const hasSelections = syncEnabled
       ? selectedVerses.size > 0
       : Object.values(independentSelections).some((set) => set && set.size > 0);
 
     if (!hasSelections) return;
+    if (availableTranslations.length === 0) {
+      throw new Error("No loaded translations are available to copy");
+    }
+    if (
+      !syncEnabled &&
+      !availableTranslations.some(
+        (translation) => independentSelections[translation]?.size > 0,
+      )
+    ) {
+      throw new Error(
+        "No selected verses from loaded translations are available to copy",
+      );
+    }
 
     try {
       if (syncEnabled) {
@@ -472,26 +513,37 @@ const VerseComparisonPanel = ({
 
         const verseRange = formatVerseRange(sortedVerseNumbers);
 
-        const translationContents = translations.map((translation) => {
-          const verseTexts = sortedVerseNumbers.map((verseNumber) => {
-            const verseData = alignedVerses.find(
-              (v) => v.verse === verseNumber,
-            );
-            const verseText = verseData?.[translation] || "";
-            return verseText ? `${verseNumber} ${verseText}` : "";
-          });
+        const translationContents = availableTranslations
+          .map((translation) => {
+            const verseTexts = sortedVerseNumbers.map((verseNumber) => {
+              const verseData = alignedVerses.find(
+                (v) => v.verse === verseNumber,
+              );
+              const verseText = verseData?.[translation] || "";
+              return verseText ? `${verseNumber} ${verseText}` : "";
+            });
 
-          const content = verseTexts.filter((text) => text).join("\n");
-          const localizedBook = getLocalizedBookName(selectedBook, translation);
-          const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
-          return content ? `${header}\n${content}` : header;
-        });
+            const content = verseTexts.filter((text) => text).join("\n");
+            if (!content) return null;
+
+            const localizedBook = getLocalizedBookName(
+              selectedBook,
+              translation,
+            );
+            const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
+            return `${header}\n${content}`;
+          })
+          .filter((content) => content !== null);
+
+        if (translationContents.length === 0) {
+          throw new Error("No loaded verse text is available to copy");
+        }
 
         const textToCopy = translationContents.join("\n\n");
-        await navigator.clipboard.writeText(textToCopy);
+        await writeTextToClipboard(textToCopy);
       } else {
         // Independent mode: copy selected verses from each translation separately
-        const translationContents = translations
+        const translationContents = availableTranslations
           .map((translation) => {
             const translationSelections = independentSelections[translation];
             if (!translationSelections || translationSelections.size === 0)
@@ -517,12 +569,16 @@ const VerseComparisonPanel = ({
               translation,
             );
             const header = `${localizedBook} ${selectedChapter}:${verseRange} ${translation.toUpperCase()}`;
-            return content ? `${header}\n${content}` : header;
+            return content ? `${header}\n${content}` : null;
           })
           .filter((content) => content !== null);
 
+        if (translationContents.length === 0) {
+          throw new Error("No loaded verse text is available to copy");
+        }
+
         const textToCopy = translationContents.join("\n\n");
-        await navigator.clipboard.writeText(textToCopy);
+        await writeTextToClipboard(textToCopy);
       }
     } catch (err) {
       console.error("Failed to copy text:", err);
@@ -535,10 +591,48 @@ const VerseComparisonPanel = ({
     selectedBook,
     selectedChapter,
     translations,
+    translationErrors,
     alignedVerses,
     getLocalizedBookName,
     formatVerseRange,
   ]);
+
+  const handleRetryTranslation = useCallback(
+    (translation) => {
+      retryFocusTranslationRef.current = translation;
+      fetchAllTranslationVerses();
+    },
+    [fetchAllTranslationVerses],
+  );
+
+  useEffect(() => {
+    const translation = retryFocusTranslationRef.current;
+    if (!translation || isLoading) return undefined;
+
+    const focusFrame = requestAnimationFrame(() => {
+      if (document.activeElement !== document.body) {
+        retryFocusTranslationRef.current = null;
+        return;
+      }
+
+      const retryButton = panelRef.current?.querySelector(
+        `[data-retry-translation="${translation}"]`,
+      );
+      const translationView = document.getElementById(`view-${translation}`);
+      const nextFocusTarget =
+        retryButton ||
+        translationView?.querySelector('.verse-item[tabindex="0"]');
+
+      nextFocusTarget?.focus({ preventScroll: true });
+      retryFocusTranslationRef.current = null;
+    });
+
+    return () => cancelAnimationFrame(focusFrame);
+  }, [alignedVerses, isLoading, translationErrors]);
+
+  useEffect(() => {
+    retryFocusTranslationRef.current = null;
+  }, [selectedBook, selectedChapter, translations]);
 
   // Expose copy function globally for the main nav button to use
   useEffect(() => {
@@ -582,10 +676,8 @@ const VerseComparisonPanel = ({
     selectedChapter,
   ]);
 
-  // Update heights for all relevant changes:
-  // - Verse selections (selecting/unselecting, both sync and independent modes)
-  // - Translation changes (adding/removing translations)
-  // - Initial load and data changes
+  // Full alignment is only needed when the columns or their data change.
+  // Selection changes already update the affected row in syncSingleVerseHeight.
   useEffect(() => {
     if (alignedVerses.length > 0) {
       // Use delay to allow DOM to update first
@@ -599,13 +691,7 @@ const VerseComparisonPanel = ({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [
-    selectedVerses, // Sync selections
-    independentSelections, // Independent selections
-    translations, // Translation list changes
-    alignVerseHeights,
-    alignedVerses.length,
-  ]);
+  }, [translations, alignVerseHeights, alignedVerses.length]);
 
   // Recalculate verse heights when book or chapter changes
   useEffect(() => {
@@ -672,12 +758,23 @@ const VerseComparisonPanel = ({
         </div>
       )}
 
+      {Object.keys(translationErrors).length > 0 && (
+        <div className="comparison-errors-announcement" role="alert">
+          {Object.entries(translationErrors)
+            .map(([translation, message]) => `${translation}: ${message}`)
+            .join(" ")}
+        </div>
+      )}
+
       {showSyncHint && (
         <div className="sync-hint">
-          <span className="sync-hint-text">
+          <span className="sync-hint-text sync-hint-text-full">
             <strong>Sync on:</strong> Clicking a verse in any translation
             selects the same verse in all translations. Toggle sync off to
             select independently.
+          </span>
+          <span className="sync-hint-text sync-hint-text-compact">
+            <strong>Sync on.</strong> Tap a verse to select it everywhere.
           </span>
           <button
             className="sync-hint-dismiss"
@@ -707,7 +804,7 @@ const VerseComparisonPanel = ({
                 key={`sticky-header-${translation}`}
                 className={`comparison-header-item ${isRemoving ? "column-removing" : "column-entering"}`}
               >
-                <h4>{translation}</h4>
+                <h2>{translation}</h2>
               </div>
             );
           })}
@@ -721,10 +818,11 @@ const VerseComparisonPanel = ({
         onScroll={handleHorizontalScroll}
       >
         {translations.map((translation) => {
-          const hasData =
-            alignedVerses.length > 0 &&
-            alignedVerses[0][translation] !== undefined;
+          const hasData = alignedVerses.some(
+            (verseData) => verseData[translation] != null,
+          );
           const isRemoving = removingTranslations.has(translation);
+          const translationError = translationErrors[translation];
 
           if (!hasData && isLoading) {
             // Show skeleton for this column (initial load or newly added translation)
@@ -777,6 +875,32 @@ const VerseComparisonPanel = ({
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            );
+          }
+
+          if (translationError) {
+            return (
+              <div
+                key={`error-${translation}`}
+                className="comparison-view-container comparison-column-error"
+              >
+                <div className="view-header">
+                  <h2>{translation}</h2>
+                </div>
+                <div className="comparison-column-error-content">
+                  <p>
+                    <strong>{translation}:</strong> {translationError}
+                  </p>
+                  <button
+                    type="button"
+                    data-retry-translation={translation}
+                    onClick={() => handleRetryTranslation(translation)}
+                    aria-label={`Retry loading ${translation}`}
+                  >
+                    Retry
+                  </button>
                 </div>
               </div>
             );

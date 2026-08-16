@@ -1,4 +1,11 @@
-import React, { useState, useCallback, useEffect, useId, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+} from "react";
 import ReactDOM from "react-dom";
 import PropTypes from "prop-types";
 import "./SyncControls.css";
@@ -12,7 +19,7 @@ const SyncControls = ({
   maxTranslations = 4,
 }) => {
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [menuCoords, setMenuCoords] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
   const addBtnRef = useRef(null);
   const menuRef = useRef(null);
   const menuId = `${useId()}-translation-menu`;
@@ -36,21 +43,103 @@ const SyncControls = ({
   );
   const atMax = translations.length >= maxTranslations;
 
-  const handleToggleMenu = useCallback(() => {
-    if (!showAddMenu && addBtnRef.current) {
-      const rect = addBtnRef.current.getBoundingClientRect();
-      setMenuCoords(rect);
+  const closeMenu = useCallback((restoreFocus = false) => {
+    setShowAddMenu(false);
+    setMenuPosition(null);
+
+    if (restoreFocus) {
+      requestAnimationFrame(() => addBtnRef.current?.focus());
     }
-    setShowAddMenu((prev) => !prev);
-  }, [showAddMenu]);
+  }, []);
+
+  // Keep the portal inside the viewport, opening above the trigger when needed.
+  const updateMenuPosition = useCallback(() => {
+    const trigger = addBtnRef.current;
+    if (!trigger) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const menu = menuRef.current;
+    const viewportPadding = 8;
+    const gap = 4;
+    const menuWidth = Math.max(menu?.getBoundingClientRect().width || 0, 160);
+    const maxViewportHeight = Math.max(
+      44,
+      window.innerHeight - viewportPadding * 2,
+    );
+    const measuredHeight =
+      menu?.scrollHeight || Math.min(maxViewportHeight, 320);
+    const availableBelow = Math.max(
+      44,
+      window.innerHeight - triggerRect.bottom - gap - viewportPadding,
+    );
+    const availableAbove = Math.max(
+      44,
+      triggerRect.top - gap - viewportPadding,
+    );
+    const openAbove =
+      availableBelow < Math.min(measuredHeight, maxViewportHeight) &&
+      availableAbove > availableBelow;
+    const availableHeight = openAbove ? availableAbove : availableBelow;
+    const height = Math.min(
+      measuredHeight,
+      maxViewportHeight,
+      Math.max(44, availableHeight),
+    );
+    const top = openAbove
+      ? Math.max(viewportPadding, triggerRect.top - gap - height)
+      : Math.min(
+          window.innerHeight - viewportPadding - height,
+          triggerRect.bottom + gap,
+        );
+    const left = Math.min(
+      Math.max(viewportPadding, triggerRect.left),
+      Math.max(
+        viewportPadding,
+        window.innerWidth - menuWidth - viewportPadding,
+      ),
+    );
+    const nextPosition = {
+      top,
+      left,
+      maxHeight: Math.max(44, availableHeight),
+    };
+
+    setMenuPosition((previous) => {
+      if (
+        previous &&
+        previous.top === nextPosition.top &&
+        previous.left === nextPosition.left &&
+        previous.maxHeight === nextPosition.maxHeight
+      ) {
+        return previous;
+      }
+      return nextPosition;
+    });
+  }, []);
+
+  const handleToggleMenu = useCallback(() => {
+    if (showAddMenu) {
+      closeMenu();
+      return;
+    }
+
+    const rect = addBtnRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setMenuPosition({
+      top: rect.bottom + 4,
+      left: rect.left,
+      maxHeight: Math.max(44, window.innerHeight - 16),
+    });
+    setShowAddMenu(true);
+  }, [closeMenu, showAddMenu]);
 
   const handleAddClick = useCallback(
     (translation) => {
       onAddTranslation(translation);
-      setShowAddMenu(false);
-      requestAnimationFrame(() => addBtnRef.current?.focus());
+      closeMenu(true);
     },
-    [onAddTranslation],
+    [closeMenu, onAddTranslation],
   );
 
   const handleRemoveClick = useCallback(
@@ -67,9 +156,9 @@ const SyncControls = ({
       if (
         addBtnRef.current &&
         !addBtnRef.current.contains(e.target) &&
-        !e.target.closest(".translation-menu")
+        !menuRef.current?.contains(e.target)
       ) {
-        setShowAddMenu(false);
+        closeMenu();
       }
     };
     document.addEventListener("mousedown", handler);
@@ -78,7 +167,21 @@ const SyncControls = ({
       document.removeEventListener("mousedown", handler);
       document.removeEventListener("touchstart", handler);
     };
-  }, [showAddMenu]);
+  }, [closeMenu, showAddMenu]);
+
+  useLayoutEffect(() => {
+    if (!showAddMenu) return undefined;
+
+    updateMenuPosition();
+    const handleViewportChange = () => updateMenuPosition();
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [showAddMenu, updateMenuPosition]);
 
   useEffect(() => {
     if (!showAddMenu) return;
@@ -90,42 +193,45 @@ const SyncControls = ({
     return () => cancelAnimationFrame(focusMenu);
   }, [showAddMenu]);
 
-  const handleMenuKeyDown = useCallback((event) => {
-    if (!menuRef.current) return;
+  const handleMenuKeyDown = useCallback(
+    (event) => {
+      if (!menuRef.current) return;
 
-    const items = Array.from(
-      menuRef.current.querySelectorAll('[role="menuitem"]'),
-    );
-    const currentIndex = items.indexOf(document.activeElement);
-    let nextIndex = currentIndex;
+      const items = Array.from(
+        menuRef.current.querySelectorAll('[role="menuitem"]'),
+      );
+      if (items.length === 0) return;
+      const currentIndex = items.indexOf(document.activeElement);
+      let nextIndex = currentIndex;
 
-    if (event.key === "ArrowDown") {
-      nextIndex = (currentIndex + 1) % items.length;
-    } else if (event.key === "ArrowUp") {
-      nextIndex = (currentIndex - 1 + items.length) % items.length;
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = items.length - 1;
-    } else if (event.key === "Escape") {
+      if (event.key === "ArrowDown") {
+        nextIndex = (currentIndex + 1) % items.length;
+      } else if (event.key === "ArrowUp") {
+        nextIndex = (currentIndex - 1 + items.length) % items.length;
+      } else if (event.key === "Home") {
+        nextIndex = 0;
+      } else if (event.key === "End") {
+        nextIndex = items.length - 1;
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        closeMenu(true);
+        return;
+      } else if (event.key === "Tab") {
+        closeMenu();
+        return;
+      } else {
+        return;
+      }
+
       event.preventDefault();
-      setShowAddMenu(false);
-      requestAnimationFrame(() => addBtnRef.current?.focus());
-      return;
-    } else if (event.key === "Tab") {
-      setShowAddMenu(false);
-      return;
-    } else {
-      return;
-    }
-
-    event.preventDefault();
-    items[nextIndex]?.focus();
-  }, []);
+      items[nextIndex]?.focus();
+    },
+    [closeMenu],
+  );
 
   // Portal dropdown — escapes any overflow:auto container
   const menu =
-    showAddMenu && menuCoords
+    showAddMenu && menuPosition
       ? ReactDOM.createPortal(
           <div
             className="translation-menu"
@@ -136,9 +242,10 @@ const SyncControls = ({
             onKeyDown={handleMenuKeyDown}
             style={{
               position: "fixed",
-              // Open downward from the button's bottom edge
-              top: `${menuCoords.bottom + 4}px`,
-              left: `${Math.min(menuCoords.left, window.innerWidth - 150)}px`,
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`,
+              right: "auto",
+              maxHeight: `${menuPosition.maxHeight}px`,
               zIndex: 2000,
             }}
           >

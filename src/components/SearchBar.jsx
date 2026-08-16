@@ -15,32 +15,17 @@ import {
 } from "../utils/searchAutocomplete";
 import "./SearchBar.css";
 
-const SearchBar = ({ onSearch, selectedTranslation }) => {
+const SearchBar = ({ onSearch, selectedTranslation, bibleStructure }) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [bibleStructure, setBibleStructure] = useState(null);
   const inputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const blurTimerRef = useRef(null);
   const isComposingRef = useRef(false);
   const previousTranslationRef = useRef(selectedTranslation);
   const skipNextFocusSuggestionsRef = useRef(false);
-
-  // Load Bible structure data on component mount
-  useEffect(() => {
-    const loadBibleStructure = async () => {
-      try {
-        const response = await fetch("/bible-structure.json");
-        const data = await response.json();
-        setBibleStructure(data);
-      } catch (error) {
-        console.error("Failed to load Bible structure:", error);
-      }
-    };
-    loadBibleStructure();
-  }, []);
 
   const generateSuggestions = useCallback(
     (input) =>

@@ -1,8 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { sendEvent } from "../utils/ga";
+import { writeTextToClipboard } from "../utils/clipboard";
 
 const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
-  const [copied, setCopied] = useState(false);
+  const [shareState, setShareState] = useState("idle");
+  const resetTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    },
+    [],
+  );
+
+  const showTemporaryState = (nextState) => {
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    setShareState(nextState);
+    resetTimerRef.current = setTimeout(() => {
+      setShareState("idle");
+      resetTimerRef.current = null;
+    }, 2000);
+  };
 
   const handleShare = async () => {
     try {
@@ -20,9 +38,8 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
           : "incomplete-url";
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await writeTextToClipboard(url);
+      showTemporaryState("copied");
       sendEvent({
         action: "share_verses_clipboard",
         category: "engagement",
@@ -30,6 +47,7 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
       });
     } catch (err) {
       console.error("Sharing failed", err);
+      showTemporaryState("error");
       sendEvent({
         action: "share_verses_error",
         category: "engagement",
@@ -41,17 +59,23 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
   return (
     <button
       onClick={handleShare}
-      className="share-button"
+      className={`share-button ${shareState}`}
       disabled={disabled}
       aria-live="polite"
       aria-label={
-        copied
+        shareState === "copied"
           ? "Share link copied"
-          : `Copy share link for ${verseCount} selected verse${verseCount === 1 ? "" : "s"}`
+          : shareState === "error"
+            ? "Could not copy share link"
+            : `Copy share link for ${verseCount} selected verse${verseCount === 1 ? "" : "s"}`
       }
-      title="Share selected verses"
+      title={
+        shareState === "error"
+          ? "Copy failed. Try again."
+          : "Share selected verses"
+      }
     >
-      {copied ? (
+      {shareState === "copied" ? (
         <>
           <svg
             viewBox="0 0 24 24"
@@ -64,6 +88,19 @@ const ShareButton = ({ url, disabled = false, verseCount = 0 }) => {
             <polyline points="20,6 9,17 4,12" />
           </svg>
         </>
+      ) : shareState === "error" ? (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="share-icon"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="8" y1="8" x2="16" y2="16" />
+          <line x1="16" y1="8" x2="8" y2="16" />
+        </svg>
       ) : (
         <>
           <svg

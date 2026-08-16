@@ -17,6 +17,7 @@ import {
 import { VerseProvider } from "./useVerseData";
 import "./styles/index.css";
 import { sendPageView, sendEvent } from "./utils/ga";
+import { writeTextToClipboard } from "./utils/clipboard";
 
 // Shared SVG icons to avoid duplication
 const SunIcon = () => (
@@ -56,6 +57,25 @@ const CopyProgressIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <circle cx="12" cy="12" r="10" />
     <polyline points="12,6 12,12 16,14" />
+  </svg>
+);
+
+const CopyErrorIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="8" y1="8" x2="16" y2="16" />
+    <line x1="16" y1="8" x2="8" y2="16" />
+  </svg>
+);
+
+const MobileToolsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" />
+    <line x1="4" y1="12" x2="20" y2="12" />
+    <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+    <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" />
   </svg>
 );
 
@@ -107,12 +127,15 @@ function App() {
   const [comparisonRemovingTranslations, setComparisonRemovingTranslations] =
     useState(new Set());
   const [copyState, setCopyState] = useState("idle");
-  const [showMobileMenu, setShowMobileMenu] = useState(true);
-  const mobileMenuRef = useRef(null);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [showComparisonScrollCue, setShowComparisonScrollCue] = useState(false);
   const chapterVersesRef = useRef([]);
   const navRef = useRef(null);
+  const navSecondaryControlsRef = useRef(null);
+  const comparisonControlsRef = useRef(null);
   const dataRequestControllerRef = useRef(null);
   const dataRequestIdRef = useRef(0);
+  const copyResetTimerRef = useRef(null);
   const [urlReady, setUrlReady] = useState(false);
 
   // Dynamically update --nav-height based on actual nav element height
@@ -134,6 +157,52 @@ function App() {
     return () => {
       resizeObserver.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    const controls = comparisonControlsRef.current;
+    if (viewMode !== "comparison" || !controls) {
+      setShowComparisonScrollCue(false);
+      return undefined;
+    }
+
+    const updateScrollCue = () => {
+      const remainingScroll =
+        controls.scrollWidth - controls.clientWidth - controls.scrollLeft;
+      setShowComparisonScrollCue(remainingScroll > 2);
+    };
+
+    updateScrollCue();
+    const resizeObserver = new ResizeObserver(updateScrollCue);
+    resizeObserver.observe(controls);
+    if (controls.firstElementChild) {
+      resizeObserver.observe(controls.firstElementChild);
+    }
+    controls.addEventListener("scroll", updateScrollCue, { passive: true });
+
+    return () => {
+      resizeObserver.disconnect();
+      controls.removeEventListener("scroll", updateScrollCue);
+    };
+  }, [comparisonRemovingTranslations, comparisonTranslations, viewMode]);
+
+  useEffect(() => {
+    const compactNavigation = window.matchMedia(
+      "(max-width: 480px), (max-width: 768px) and (orientation: landscape)",
+    );
+    const preserveFocusedTools = () => {
+      if (
+        compactNavigation.matches &&
+        navSecondaryControlsRef.current?.contains(document.activeElement)
+      ) {
+        setMobileToolsOpen(true);
+      }
+    };
+
+    preserveFocusedTools();
+    compactNavigation.addEventListener?.("change", preserveFocusedTools);
+    return () =>
+      compactNavigation.removeEventListener?.("change", preserveFocusedTools);
   }, []);
 
   // Heartbeat for engagement rate — every 60 seconds
@@ -247,24 +316,6 @@ function App() {
     selectedTranslation,
     selectedVerses,
   ]);
-
-  // Close mobile menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!showMobileMenu) return;
-      const isOutsideMenu =
-        mobileMenuRef.current && !mobileMenuRef.current.contains(event.target);
-      const isToggleButton = event.target.closest(".mobile-menu-toggle");
-      if (isOutsideMenu && !isToggleButton) {
-        setShowMobileMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showMobileMenu]);
 
   const beginDataRequest = useCallback(() => {
     dataRequestControllerRef.current?.abort();
@@ -501,21 +552,39 @@ function App() {
     });
   }, []);
 
-  const handleRemoveComparisonTranslation = useCallback((translationId) => {
-    setComparisonTranslations((current) => {
-      if (current.length <= 1 || current[0] === translationId) return current;
-      setComparisonRemovingTranslations((r) => new Set([...r, translationId]));
+  const handleRemoveComparisonTranslation = useCallback(
+    (translationId) => {
+      if (
+        comparisonTranslations.length <= 1 ||
+        comparisonTranslations[0] === translationId ||
+        comparisonRemovingTranslations.has(translationId)
+      ) {
+        return;
+      }
+
+      setComparisonRemovingTranslations(
+        (current) => new Set([...current, translationId]),
+      );
+      setComparisonIndependentSelections((selections) => {
+        if (!selections[translationId]) return selections;
+        const next = { ...selections };
+        delete next[translationId];
+        return next;
+      });
+
       setTimeout(() => {
-        setComparisonTranslations((c) => c.filter((t) => t !== translationId));
-        setComparisonRemovingTranslations((r) => {
-          const next = new Set(r);
+        setComparisonTranslations((current) =>
+          current.filter((translation) => translation !== translationId),
+        );
+        setComparisonRemovingTranslations((current) => {
+          const next = new Set(current);
           next.delete(translationId);
           return next;
         });
       }, 250);
-      return current;
-    });
-  }, []);
+    },
+    [comparisonRemovingTranslations, comparisonTranslations],
+  );
 
   // Check if navigation buttons should be disabled
   const isPrevDisabled =
@@ -573,6 +642,17 @@ function App() {
   })();
 
   const showCopyActions = hasReaderSelections || hasComparisonSelections;
+
+  const showTemporaryCopyState = useCallback((nextState) => {
+    if (copyResetTimerRef.current) {
+      clearTimeout(copyResetTimerRef.current);
+    }
+    setCopyState(nextState);
+    copyResetTimerRef.current = setTimeout(() => {
+      setCopyState("idle");
+      copyResetTimerRef.current = null;
+    }, 2000);
+  }, []);
 
   // Copy selected verses function
   const copySelectedVerses = async () => {
@@ -643,29 +723,27 @@ function App() {
       const textToCopy = content ? `${header}\n${content}` : header;
 
       try {
-        await navigator.clipboard.writeText(textToCopy);
-        setCopyState("copied");
+        await writeTextToClipboard(textToCopy);
+        showTemporaryCopyState("copied");
         sendEvent({
           action: "copy_verses",
           category: "engagement",
           label: header,
           value: sortedVerseNumbers.length,
         });
-        setTimeout(() => setCopyState("idle"), 2000);
       } catch (err) {
         console.error("Failed to copy text: ", err);
-        setCopyState("idle");
+        showTemporaryCopyState("error");
       }
     } else if (viewMode === "comparison") {
       if (window.copyComparisonVerses) {
         setCopyState("copying");
         try {
           await window.copyComparisonVerses();
-          setCopyState("copied");
-          setTimeout(() => setCopyState("idle"), 2000);
+          showTemporaryCopyState("copied");
         } catch (err) {
           console.error("Failed to copy comparison verses: ", err);
-          setCopyState("idle");
+          showTemporaryCopyState("error");
         }
       }
     }
@@ -699,7 +777,10 @@ function App() {
   };
 
   useEffect(() => {
-    return () => dataRequestControllerRef.current?.abort();
+    return () => {
+      dataRequestControllerRef.current?.abort();
+      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
+    };
   }, []);
 
   // Context value for verse data
@@ -736,10 +817,7 @@ function App() {
             </div>
 
             {/* Bottom row - Controls */}
-            <div
-              className={`nav-controls ${showMobileMenu ? "mobile-open" : ""}`}
-              ref={mobileMenuRef}
-            >
+            <div className="nav-controls">
               <div className="nav-primary-controls">
                 <BookSelector
                   bibleStructure={bibleStructure}
@@ -756,10 +834,37 @@ function App() {
                 />
               </div>
 
-              <div className="nav-secondary-controls">
+              <button
+                type="button"
+                className="mobile-tools-toggle"
+                onClick={() => setMobileToolsOpen((open) => !open)}
+                aria-expanded={mobileToolsOpen}
+                aria-controls="mobile-nav-tools"
+                aria-label={
+                  mobileToolsOpen
+                    ? "Hide search and translation controls"
+                    : "Show search and translation controls"
+                }
+                title={
+                  mobileToolsOpen
+                    ? "Hide search and translation controls"
+                    : "Show search and translation controls"
+                }
+              >
+                <MobileToolsIcon />
+              </button>
+
+              <div
+                ref={navSecondaryControlsRef}
+                id="mobile-nav-tools"
+                className={`nav-secondary-controls${
+                  mobileToolsOpen ? " mobile-tools-open" : ""
+                }`}
+              >
                 <SearchBar
                   onSearch={handleVerseSearch}
                   selectedTranslation={selectedTranslation}
+                  bibleStructure={bibleStructure}
                 />
                 <TranslationSwitcher
                   selectedTranslation={selectedTranslation}
@@ -807,7 +912,12 @@ function App() {
                 </button>
               </div>
               {viewMode === "comparison" && (
-                <div className="tab-bar-controls">
+                <div
+                  ref={comparisonControlsRef}
+                  className={`tab-bar-controls${
+                    showComparisonScrollCue ? " has-overflow-right" : ""
+                  }`}
+                >
                   <SyncControls
                     translations={comparisonTranslations}
                     onAddTranslation={handleAddComparisonTranslation}
@@ -834,14 +944,21 @@ function App() {
                       ? "Selected verses copied"
                       : copyState === "copying"
                         ? "Copying selected verses"
-                        : `Copy ${totalSelections} selected verse${totalSelections === 1 ? "" : "s"}`
+                        : copyState === "error"
+                          ? "Could not copy selected verses"
+                          : `Copy ${totalSelections} selected verse${totalSelections === 1 ? "" : "s"}`
                   }
-                  title={`Copy ${totalSelections} selected verse${
-                    totalSelections > 1 ? "s" : ""
-                  }`}
+                  title={
+                    copyState === "error"
+                      ? "Copy failed. Try again."
+                      : `Copy ${totalSelections} selected verse${
+                          totalSelections > 1 ? "s" : ""
+                        }`
+                  }
                 >
                   {copyState === "copying" && <CopyProgressIcon />}
                   {copyState === "copied" && <CopySuccessIcon />}
+                  {copyState === "error" && <CopyErrorIcon />}
                   {copyState === "idle" && (
                     <>
                       <CopyIdleIcon />

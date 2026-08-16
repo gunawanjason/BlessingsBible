@@ -4,7 +4,7 @@ import {
   getCachedHeadings,
   setCachedHeadings,
   hasCachedChapter,
-} from "./bibleCache";
+} from "./bibleCache.js";
 
 const API_BASE_URL = "https://api.blessings365.top";
 const REQUEST_TIMEOUT_MS = 12000;
@@ -15,7 +15,13 @@ const createAbortError = () => {
   return error;
 };
 
-const fetchWithTimeout = async (
+const createTimeoutError = () => {
+  const error = new Error("The Bible service took too long to respond");
+  error.name = "TimeoutError";
+  return error;
+};
+
+const fetchJsonWithTimeout = async (
   url,
   { signal, timeout = REQUEST_TIMEOUT_MS } = {},
 ) => {
@@ -23,30 +29,122 @@ const fetchWithTimeout = async (
 
   const controller = new AbortController();
   let timedOut = false;
-  const handleAbort = () => controller.abort();
+  let rejectCancellation;
+  const cancellation = new Promise((_, reject) => {
+    rejectCancellation = reject;
+  });
+  const cancel = (error) => {
+    controller.abort();
+    rejectCancellation(error);
+  };
+  const handleAbort = () => cancel(createAbortError());
   signal?.addEventListener("abort", handleAbort, { once: true });
 
   const timeoutId = setTimeout(() => {
     timedOut = true;
-    controller.abort();
+    cancel(createTimeoutError());
   }, timeout);
 
   try {
-    return await fetch(url, { signal: controller.signal });
+    const response = await Promise.race([
+      fetch(url, { signal: controller.signal }),
+      cancellation,
+    ]);
+    const data = response.ok
+      ? await Promise.race([response.json(), cancellation])
+      : null;
+    return { response, data };
   } catch (error) {
-    if (timedOut) {
-      const timeoutError = new Error(
-        "The Bible service took too long to respond",
-      );
-      timeoutError.name = "TimeoutError";
-      throw timeoutError;
-    }
+    if (timedOut && error.name !== "TimeoutError") throw createTimeoutError();
     if (signal?.aborted) throw createAbortError();
     throw error;
   } finally {
     clearTimeout(timeoutId);
     signal?.removeEventListener("abort", handleAbort);
   }
+};
+
+const invalidPayloadError = (kind) =>
+  new Error(`Bible service returned invalid ${kind} data`);
+
+const toPositiveInteger = (value) => {
+  const number = Number(value);
+  return Number.isInteger(number) && number > 0 ? number : null;
+};
+
+const getNonBlankText = (...values) =>
+  values.find((value) => typeof value === "string" && value.trim().length > 0);
+
+const normalizeVersePayload = (payload, translation, fallback = {}) => {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw invalidPayloadError("verse");
+  }
+
+  const book = getNonBlankText(payload.book, payload.book_name, fallback.book);
+  const chapter = toPositiveInteger(payload.chapter ?? fallback.chapter);
+  const verse = toPositiveInteger(
+    payload.verse ?? payload.verse_number ?? fallback.verse,
+  );
+  const text = getNonBlankText(
+    payload.content,
+    payload.text,
+    payload.verse_text,
+  );
+
+  if (!book || chapter === null || verse === null || !text) {
+    throw invalidPayloadError("verse");
+  }
+
+  return {
+    book,
+    chapter,
+    verse,
+    text,
+    translation: translation.toUpperCase(),
+    reference:
+      getNonBlankText(payload.reference) || `${book} ${chapter}:${verse}`,
+  };
+};
+
+const normalizeVerseCollection = (data, translation) => {
+  const payloads = Array.isArray(data)
+    ? data
+    : data && typeof data === "object" && Array.isArray(data.verses)
+      ? data.verses
+      : data && typeof data === "object"
+        ? [data]
+        : null;
+
+  if (!payloads || payloads.length === 0) {
+    throw invalidPayloadError("verse");
+  }
+
+  return payloads.map((payload) => normalizeVersePayload(payload, translation));
+};
+
+const validateHeadingsPayload = (data) => {
+  if (
+    !data ||
+    typeof data !== "object" ||
+    Array.isArray(data) ||
+    !Array.isArray(data.headings)
+  ) {
+    throw invalidPayloadError("headings");
+  }
+
+  data.headings.forEach((heading) => {
+    if (
+      !heading ||
+      typeof heading !== "object" ||
+      Array.isArray(heading) ||
+      toPositiveInteger(heading.start) === null ||
+      !getNonBlankText(heading.heading)
+    ) {
+      throw invalidPayloadError("headings");
+    }
+  });
+
+  return data.headings;
 };
 
 // Helper function to parse verse references
@@ -126,7 +224,7 @@ export const fetchSingleVerse = async (
       book,
     )}&chapter=${chapter}&verse=${verse}`;
 
-    const response = await fetchWithTimeout(url, options);
+    const { response, data } = await fetchJsonWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -137,17 +235,7 @@ export const fetchSingleVerse = async (
       );
     }
 
-    const data = await response.json();
-
-    // Return normalized format
-    return {
-      book: book,
-      chapter: chapter,
-      verse: verse,
-      text: data.content || data.text || data.verse_text || "",
-      translation: translation.toUpperCase(),
-      reference: `${book} ${chapter}:${verse}`,
-    };
+    return normalizeVersePayload(data, translation, { book, chapter, verse });
   } catch (error) {
     if (error.name !== "AbortError") {
       console.error("Error in fetchSingleVerse:", error);
@@ -179,7 +267,7 @@ export const fetchMultipleVerses = async (
       formattedRefs,
     )}`;
 
-    const response = await fetchWithTimeout(url, options);
+    const { response, data } = await fetchJsonWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -190,46 +278,7 @@ export const fetchMultipleVerses = async (
       );
     }
 
-    const data = await response.json();
-
-    // Normalize the response format
-    if (Array.isArray(data)) {
-      return data.map((verse) => ({
-        book: verse.book || verse.book_name || "",
-        chapter: verse.chapter || "",
-        verse: verse.verse || verse.verse_number || "",
-        text: verse.content || verse.text || verse.verse_text || "",
-        translation: translation.toUpperCase(),
-        reference:
-          verse.reference ||
-          `${verse.book || ""} ${verse.chapter || ""}:${verse.verse || ""}`,
-      }));
-    } else if (data.verses && Array.isArray(data.verses)) {
-      return data.verses.map((verse) => ({
-        book: verse.book || verse.book_name || "",
-        chapter: verse.chapter || "",
-        verse: verse.verse || verse.verse_number || "",
-        text: verse.content || verse.text || verse.verse_text || "",
-        translation: translation.toUpperCase(),
-        reference:
-          verse.reference ||
-          `${verse.book || ""} ${verse.chapter || ""}:${verse.verse || ""}`,
-      }));
-    } else {
-      // Single verse response
-      return [
-        {
-          book: data.book || data.book_name || "",
-          chapter: data.chapter || "",
-          verse: data.verse || data.verse_number || "",
-          text: data.content || data.text || data.verse_text || "",
-          translation: translation.toUpperCase(),
-          reference:
-            data.reference ||
-            `${data.book || ""} ${data.chapter || ""}:${data.verse || ""}`,
-        },
-      ];
-    }
+    return normalizeVerseCollection(data, translation);
   } catch (error) {
     if (error.name !== "AbortError") {
       console.error("Error in fetchMultipleVerses:", error);
@@ -250,7 +299,7 @@ export const fetchHeadings = async (
       book,
     )}&chapter=${chapter}`;
 
-    const response = await fetchWithTimeout(url, options);
+    const { response, data } = await fetchJsonWithTimeout(url, options);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -261,8 +310,7 @@ export const fetchHeadings = async (
       );
     }
 
-    const data = await response.json();
-    return data.headings || [];
+    return validateHeadingsPayload(data);
   } catch (error) {
     if (error.name !== "AbortError") {
       console.error("Error in fetchHeadings:", error);
@@ -318,7 +366,7 @@ export const fetchChapterCached = async (
 ) => {
   if (options.signal?.aborted) throw createAbortError();
   const cached = getCachedChapter(translation, book, chapter);
-  if (cached) return { data: cached, fromCache: true };
+  if (cached !== null) return { data: cached, fromCache: true };
 
   const data = await fetchMultipleVerses(
     translation,
@@ -339,7 +387,7 @@ export const fetchHeadingsCached = async (
 ) => {
   if (options.signal?.aborted) throw createAbortError();
   const cached = getCachedHeadings(translation, book, chapter);
-  if (cached) return { data: cached, fromCache: true };
+  if (cached !== null) return { data: cached, fromCache: true };
 
   const data = await fetchHeadings(translation, book, chapter, options);
   if (options.signal?.aborted) throw createAbortError();

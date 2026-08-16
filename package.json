@@ -3,9 +3,14 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": "^18.18.0 || ^20.9.0 || >=22.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check": "pnpm test && pnpm lint && pnpm prettier:check && pnpm build",
     "lint": "eslint .",
     "test": "node --test",
     "preview": "vite preview",

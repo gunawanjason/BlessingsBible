@@ -290,6 +290,10 @@
   animation: dropdownAppear 0.2s ease-out;
 }
 
+.book-menu-backdrop {
+  display: none;
+}
+
 .chapters-menu {
   right: auto;
   width: auto;
@@ -873,6 +877,16 @@
     animation: slideUpSheet 0.25s ease-out;
     display: flex;
     flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .book-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgb(44 37 32 / 24%);
+    touch-action: none;
   }
 
   .book-menu {
@@ -911,6 +925,10 @@
 
   .book-search-input {
     font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+    padding-block: 8px;
+    line-height: 1.4;
+    box-sizing: border-box;
   }
 
   /* Scrollable content area */
